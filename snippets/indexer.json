@@ -1,0 +1,28 @@
+{
+  "name": "kb-apex-indexer",
+  "description": "Orquestrador on-demand do pipeline RAG. Le blobs de kb-apex-datasource, aplica kb-apex-skillset (DocIntel + chunking), e popula kb-apex-index via indexProjections. Schedule null = trigger manual via /run.",
+  "dataSourceName": "kb-apex-datasource",
+  "skillsetName": "kb-apex-skillset",
+  "targetIndexName": "kb-apex-index",
+  "schedule": null,
+  "parameters": {
+    "configuration": {
+      "dataToExtract": "contentAndMetadata",
+      "parsingMode": "default",
+      "allowSkillsetToReadFileData": true,
+      "indexStorageMetadataOnlyForOversizedDocuments": true,
+      "imageAction": "none"
+    },
+    "batchSize": 1,
+    "maxFailedItems": 0,
+    "maxFailedItemsPerBatch": 0
+  },
+  "fieldMappings": [
+    {
+      "sourceFieldName": "metadata_storage_path",
+      "targetFieldName": "source_url",
+      "mappingFunction": null
+    }
+  ],
+  "outputFieldMappings": []
+}

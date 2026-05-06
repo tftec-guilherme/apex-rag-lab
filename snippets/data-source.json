@@ -1,0 +1,19 @@
+{
+  "name": "kb-apex-datasource",
+  "description": "Aponta para o container kb-source com os 8 PDFs sample-kb. Autenticacao via Managed Identity do AI Search (role Storage Blob Data Reader concedido no cap 06). Substitua {subId}, {rgName}, {saName} antes de POST.",
+  "type": "azureblob",
+  "credentials": {
+    "connectionString": "ResourceId=/subscriptions/{subId}/resourceGroups/{rgName}/providers/Microsoft.Storage/storageAccounts/{saName};"
+  },
+  "container": {
+    "name": "kb-source",
+    "query": null
+  },
+  "dataChangeDetectionPolicy": {
+    "@odata.type": "#Microsoft.Azure.Search.HighWaterMarkChangeDetectionPolicy",
+    "highWaterMarkColumnName": "metadata_storage_last_modified"
+  },
+  "dataDeletionDetectionPolicy": {
+    "@odata.type": "#Microsoft.Azure.Search.NativeBlobSoftDeleteDeletionDetectionPolicy"
+  }
+}

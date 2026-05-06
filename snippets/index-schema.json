@@ -1,0 +1,86 @@
+{
+  "name": "kb-apex-index",
+  "description": "Index dos chunks dos 8 PDFs sample-kb apos processamento Document Intelligence + Split. Analyzer pt-Lucene em chunk e title para stemming portugues. Semantic config kb-apex-semantic habilita re-ranking neural (cap 08-09).",
+  "fields": [
+    {
+      "name": "id",
+      "type": "Edm.String",
+      "key": true,
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "analyzer": "keyword"
+    },
+    {
+      "name": "parent_id",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": false
+    },
+    {
+      "name": "chunk",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "analyzer": "pt-Lucene"
+    },
+    {
+      "name": "title",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "analyzer": "pt-Lucene"
+    },
+    {
+      "name": "source_file",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": true
+    },
+    {
+      "name": "source_url",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false
+    }
+  ],
+  "semantic": {
+    "configurations": [
+      {
+        "name": "kb-apex-semantic",
+        "prioritizedFields": {
+          "titleField": {
+            "fieldName": "title"
+          },
+          "prioritizedContentFields": [
+            {
+              "fieldName": "chunk"
+            }
+          ],
+          "prioritizedKeywordsFields": []
+        }
+      }
+    ]
+  },
+  "corsOptions": {
+    "allowedOrigins": ["*"],
+    "maxAgeInSeconds": 300
+  }
+}

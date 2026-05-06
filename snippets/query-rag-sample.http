@@ -1,0 +1,110 @@
+### Apex RAG Lab — Query samples (REST format)
+### Use com VS Code extensao "REST Client" ou Postman/Insomnia.
+### Substitua {SEARCH_ENDPOINT} e {QUERY_KEY} pelos seus valores capturados no cap 06.
+
+@searchEndpoint = https://srch-apex-rag-lab-{aluno}.search.windows.net
+@queryKey = SEU_QUERY_KEY_AQUI
+@indexName = kb-apex-index
+@apiVersion = 2024-07-01
+
+### --------------------------------------------------------------------
+### Cenario 1 — Keyword search puro (BM25)
+### --------------------------------------------------------------------
+POST {{searchEndpoint}}/indexes/{{indexName}}/docs/search?api-version={{apiVersion}}
+Content-Type: application/json
+api-key: {{queryKey}}
+
+{
+  "search": "devolução",
+  "top": 5,
+  "select": "chunk,source_file,title"
+}
+
+### --------------------------------------------------------------------
+### Cenario 2 — Stemming portugues (analyzer pt-Lucene)
+### "horarios" matches "horario" via stemming
+### --------------------------------------------------------------------
+POST {{searchEndpoint}}/indexes/{{indexName}}/docs/search?api-version={{apiVersion}}
+Content-Type: application/json
+api-key: {{queryKey}}
+
+{
+  "search": "horários",
+  "top": 5,
+  "select": "chunk,source_file"
+}
+
+### --------------------------------------------------------------------
+### Cenario 3 — Filter por source_file
+### Buscar so dentro de um PDF especifico
+### --------------------------------------------------------------------
+POST {{searchEndpoint}}/indexes/{{indexName}}/docs/search?api-version={{apiVersion}}
+Content-Type: application/json
+api-key: {{queryKey}}
+
+{
+  "search": "prazo",
+  "filter": "source_file eq 'politica_reembolso_lojista.pdf'",
+  "top": 5,
+  "select": "chunk,source_file,title"
+}
+
+### --------------------------------------------------------------------
+### Cenario 4 — Semantic ranker (re-ranking neural)
+### Query natural em portugues
+### --------------------------------------------------------------------
+POST {{searchEndpoint}}/indexes/{{indexName}}/docs/search?api-version={{apiVersion}}
+Content-Type: application/json
+api-key: {{queryKey}}
+
+{
+  "search": "quanto tempo eu tenho pra devolver um produto?",
+  "queryType": "semantic",
+  "semanticConfiguration": "kb-apex-semantic",
+  "top": 5,
+  "select": "chunk,source_file,title"
+}
+
+### --------------------------------------------------------------------
+### Cenario 5 — Semantic ranker + answers + captions + highlight
+### Modo RAG canonico — pronto para integrar em frontend
+### --------------------------------------------------------------------
+POST {{searchEndpoint}}/indexes/{{indexName}}/docs/search?api-version={{apiVersion}}
+Content-Type: application/json
+api-key: {{queryKey}}
+
+{
+  "search": "posso devolver produto perecível?",
+  "queryType": "semantic",
+  "semanticConfiguration": "kb-apex-semantic",
+  "captions": "extractive|highlight-true",
+  "answers": "extractive|count-3",
+  "highlight": "chunk",
+  "top": 5,
+  "select": "chunk,source_file,title"
+}
+
+### --------------------------------------------------------------------
+### Bonus — Service stats (verificar saude do servico)
+### Use admin key para esta chamada (nao query key)
+### --------------------------------------------------------------------
+GET {{searchEndpoint}}/servicestats?api-version={{apiVersion}}
+api-key: SEU_ADMIN_KEY_AQUI
+
+### --------------------------------------------------------------------
+### Bonus — Index stats (document count, storage size)
+### --------------------------------------------------------------------
+GET {{searchEndpoint}}/indexes/{{indexName}}/stats?api-version={{apiVersion}}
+api-key: SEU_ADMIN_KEY_AQUI
+
+### --------------------------------------------------------------------
+### Bonus — Indexer status (apos run)
+### --------------------------------------------------------------------
+GET {{searchEndpoint}}/indexers/kb-apex-indexer/status?api-version={{apiVersion}}
+api-key: SEU_ADMIN_KEY_AQUI
+
+### --------------------------------------------------------------------
+### Bonus — Trigger indexer run manual
+### --------------------------------------------------------------------
+POST {{searchEndpoint}}/indexers/kb-apex-indexer/run?api-version={{apiVersion}}
+api-key: SEU_ADMIN_KEY_AQUI

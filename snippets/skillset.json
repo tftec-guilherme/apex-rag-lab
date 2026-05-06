@@ -1,0 +1,84 @@
+{
+  "name": "kb-apex-skillset",
+  "description": "Pipeline RAG production-grade: Document Intelligence prebuilt-layout (extracao de paragrafos + tabelas + headings) + SplitSkill (chunking layout-aware 2048 chars com overlap 256). Output projetado para kb-apex-index com parent_id rastreando blob origem.",
+  "skills": [
+    {
+      "@odata.type": "#Microsoft.Skills.Util.DocumentIntelligenceLayoutSkill",
+      "name": "doc-intel-layout",
+      "description": "Extrai paragrafos, tabelas, headings via Document Intelligence prebuilt-layout. Output em markdown estruturado com sections.",
+      "context": "/document",
+      "outputMode": "oneToMany",
+      "markdownHeaderDepth": "h3",
+      "inputs": [
+        {
+          "name": "file_data",
+          "source": "/document/file_data"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "markdown_document",
+          "targetName": "markdown_doc"
+        }
+      ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Text.SplitSkill",
+      "name": "split-chunks",
+      "description": "Quebra markdown em chunks layout-aware (respeita sections detectadas pelo Doc Intel). 2048 chars max com 256 chars de overlap.",
+      "context": "/document/markdown_doc/sections/*",
+      "textSplitMode": "pages",
+      "maximumPageLength": 2048,
+      "pageOverlapLength": 256,
+      "unit": "characters",
+      "inputs": [
+        {
+          "name": "text",
+          "source": "/document/markdown_doc/sections/*/content"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "textItems",
+          "targetName": "chunks"
+        }
+      ]
+    }
+  ],
+  "indexProjections": {
+    "selectors": [
+      {
+        "targetIndexName": "kb-apex-index",
+        "parentKeyFieldName": "parent_id",
+        "sourceContext": "/document/markdown_doc/sections/*/chunks/*",
+        "mappings": [
+          {
+            "name": "chunk",
+            "source": "/document/markdown_doc/sections/*/chunks/*"
+          },
+          {
+            "name": "title",
+            "source": "/document/markdown_doc/sections/*/title"
+          },
+          {
+            "name": "source_file",
+            "source": "/document/metadata_storage_name"
+          },
+          {
+            "name": "source_url",
+            "source": "/document/metadata_storage_path"
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "projectionMode": "skipIndexingParentDocuments"
+    }
+  },
+  "cognitiveServices": {
+    "@odata.type": "#Microsoft.Azure.Search.AIServicesByIdentity",
+    "description": "Document Intelligence acessado via System-Assigned MI do AI Search. Substitua {subdomainUrl} pelo endpoint do seu cog-docint-apex-{aluno}.",
+    "subdomainUrl": "https://cog-docint-apex-{aluno}.cognitiveservices.azure.com/",
+    "identity": null
+  }
+}
