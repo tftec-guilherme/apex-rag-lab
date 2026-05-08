@@ -1,10 +1,28 @@
 # apex-rag-lab
 
+> 🚨 **STATUS: DEPRECATED (2026-05-08)** 🚨
+>
+> Este repositório foi **descontinuado** pela decisão prof Wave 4 (mega-sessão 2026-05-07/08). O Lab Intermediário RAG agora vive **direto no monorepo** da disciplina:
+>
+> **Local canônico:** [`azure-retail/Disciplina_06_IA_Automacao_Azure_Ferramentas_Integradas/01_Aulas/Lab_Intermediario_RAG_HelpSphere_Guia_Portal.md`](https://github.com/tftec-guilherme/azure-retail/tree/main/Disciplina_06_IA_Automacao_Azure_Ferramentas_Integradas/01_Aulas)
+>
+> **Por que deprecated?** A decisão Wave 4 cravou Portal-first refactor para os 3 Labs D06, e o Lab Intermediário virou content-rich monorepo (~2000 linhas, ≥12 [CRIAR-X], 13 marcadores Portal step-by-step). Manter um repo separado redundava esforço sem benefício.
+>
+> **Aguardando:** `gh repo delete tftec-guilherme/apex-rag-lab` (precisa scope refresh `gh auth refresh -s delete_repo`).
+>
+> **Repos companions ATIVOS dos outros Labs D06:**
+> - Lab Final → [`apex-helpsphere-agente-lab`](https://github.com/tftec-guilherme/apex-helpsphere-agente-lab)
+> - Lab Avançado → [`apex-helpsphere-prod-lab`](https://github.com/tftec-guilherme/apex-helpsphere-prod-lab)
+
+---
+
+## Conteúdo histórico (preservado abaixo apenas para referência)
+
 > **Lab Intermediário — Disciplina 06: IA e Automação no Azure (Pós-Graduação Arquitetura Cloud Azure · TFTEC + Anhanguera)**
 >
 > Pipeline RAG production-grade passo-a-passo no Portal Azure · companion didático do [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) · `version-anchor: Q2-2026`
 
-> ⚠️ **Status:** `v0.1.0-init` — skeleton em construção. Conteúdo (8 PDFs sample-kb + 10 capítulos passo-a-passo + snippets + screenshots) será adicionado em sessões dedicadas. Veja [CHANGES.md](./CHANGES.md) para roadmap.
+> ⚠️ **Status original:** `v0.1.0-init` — skeleton em construção. Conteúdo (8 PDFs sample-kb + 10 capítulos passo-a-passo + snippets + screenshots) será adicionado em sessões dedicadas. Veja [CHANGES.md](./CHANGES.md) para roadmap.
 
 ## 🎯 Objetivo pedagógico
 
