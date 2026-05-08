@@ -1,46 +1,107 @@
 # PARA-O-ALUNO — apex-rag-lab
 
-> Bem-vindo. Este é o **entrypoint** do Lab Intermediário (RAG production-grade) da Disciplina 06. Vai te guiar pelo Portal Azure passo-a-passo construindo um pipeline RAG sobre 8 PDFs corporativos realistas em pt-BR.
+> Bem-vindo. Este é o **entrypoint pedagógico** do Lab Intermediário (RAG production-grade) da Disciplina 06. Vai te guiar pelo Portal Azure passo-a-passo construindo um pipeline RAG sobre 3 PDFs públicos da Microsoft Learn que sugere resposta em <2s para tickets do HelpSphere.
 >
-> `version-anchor: Q2-2026` · `status: v0.1.0-init`
+> `version-anchor: Q2-2026` · `status: v0.2.0 ATIVO Wave 4`
 
 ---
 
-## ⚠️ Status atual
+## ⏱️ Orçamento de tempo + dinheiro
 
-Conteúdo (10 capítulos passo-a-passo + 8 PDFs sample-kb + snippets + screenshots) **ainda em construção**. Veja [CHANGES.md](./CHANGES.md) para roadmap de versões.
+| Item | Valor |
+|------|-------|
+| Tempo total do lab | **~8 horas** (1 sessão dedicada — não tente espalhar) |
+| Custo provisionar e deletar no mesmo dia | **R$ 21-29** saindo do bolso |
+| Custo esquecer ligado 1 mês | R$ 280-320 (AI Search Standard S1 dói: R$ 8,30/dia) |
+| Free Trial USD 200 funciona? | ❌ **NÃO** — Azure OpenAI exige Pay-As-You-Go |
 
-Quando v1.0.0 sair, este arquivo terá:
-- ✅ Pré-requisitos checklist (1 minuto)
-- ✅ Quick Start em 6 passos
-- ✅ 8+ surpresas pedagógicas catalogadas (gotchas Portal Azure)
-- ✅ Custo estimado real (R$ medido no smoke test)
-- ✅ Tempo realista por capítulo
+**Regra de ouro inegociável:** ao terminar a sessão, rode:
 
----
+```bash
+az group delete --name rg-lab-intermediario --yes --no-wait
+```
 
-## 🔗 Por enquanto, use as referências
-
-### Referência de tom + estrutura
-- [PARA-O-ALUNO do `apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere/blob/main/PARA-O-ALUNO.md) — 29 surpresas pedagógicas catalogadas, mesmo padrão de tom
-
-### Conteúdo técnico do Lab Intermediário
-- Guia v5 da disciplina: `azure-retail/Disciplina_06_*/01_Aulas/Lab_Intermediario_RAG_HelpSphere_Guia_Portal.md` (acesso via prof se você não é forkador)
-- Microsoft Learn — Azure AI Search [skillsets](https://learn.microsoft.com/azure/search/cognitive-search-working-with-skillsets)
-- Microsoft Learn — Document Intelligence [`prebuilt-layout`](https://learn.microsoft.com/azure/ai-services/document-intelligence/concept-layout)
-
-### Repo companion (SaaS host)
-- [apex-helpsphere](https://github.com/tftec-guilherme/apex-helpsphere) — sistema HelpSphere base que recebe os tickets que o RAG deste lab ajuda a responder
+Lembrar uma semana depois custa R$ 50+. Lembrar um mês depois custa R$ 250+.
 
 ---
 
-## 🎯 Cenário em 3 linhas (preview)
+## ✅ Pré-requisitos checklist (5 min)
 
-A **Apex Group** (holding varejo brasileira fictícia) já tem um sistema de tickets em produção: o **HelpSphere**. 12 mil tickets/mês, 50 deles em pt-BR seedados no `apex-helpsphere`. Sua missão neste lab: **construir um pipeline RAG production-grade no Portal Azure** que indexa 8 PDFs corporativos e responde dúvidas dos atendentes (Diego, Marina, Lia) sobre operação de loja, integração SAP, política de reembolso, etc.
+Antes de começar, confirme em ordem:
+
+- [ ] Subscription Azure **Pay-As-You-Go** (Free Trial não serve para este lab)
+- [ ] Cartão de crédito internacional vinculado e ativo
+- [ ] **Bloco 2 da Disciplina 06 já executado** — RG `rg-helpsphere-ia` existe na sua subscription com Foundry Hub `aifhub-apex-prod` + Project base `aifproj-helpsphere-base`
+- [ ] Quota Azure OpenAI aprovada na sua region (≥30K TPM em `text-embedding-3-large` e `gpt-4.1-mini`) — peça via support request **1-3 dias antes** (Pré-aula 0 cobre isso)
+- [ ] Azure CLI 2.x instalado (`az --version`)
+- [ ] Azure Developer CLI instalado (`azd version`)
+- [ ] VS Code com extensão Azure Functions
+- [ ] Python 3.11+ (`python --version`)
+- [ ] Postman, Insomnia ou similar (testes REST da Function App)
+- [ ] Você é Owner ou (Contributor + User Access Administrator) no escopo da subscription
+- [ ] **3 PDFs sample baixados** localmente (~3MB) — ver [`sample-kb/README.md`](./sample-kb/README.md)
+
+Se algum item está vermelho, pare aqui — execute primeiro a Pré-aula 0 + Bloco 2.
+
+---
+
+## 🚀 Quick Start (depois dos pré-requisitos)
+
+1. Clone este repo: `git clone https://github.com/tftec-guilherme/apex-rag-lab.git && cd apex-rag-lab`
+2. Baixe os 3 PDFs sample seguindo [`sample-kb/README.md`](./sample-kb/README.md)
+3. Abra [`docs/00-guia-completo.md`](./docs/00-guia-completo.md) (guia integral) **OU** navegue por parte em [`docs/parte-01.md`](./docs/parte-01.md) → [`parte-09.md`](./docs/parte-09.md)
+4. Em cada passo Python, copie do [`snippets/`](./snippets/) — não digite do zero (zero ambiguidade, evita typos)
+5. Conforme avança, atualize as env vars que cada script consome (anote endpoints + keys quando o Portal te der)
+6. Ao final, **rode o cleanup** (`az group delete --name rg-lab-intermediario --yes --no-wait`)
+
+---
+
+## ⚠️ 7 surpresas pedagógicas (gotchas reais do lab)
+
+### #1 — Free Trial não funciona
+
+Azure OpenAI exige PAYG. Tentar provisionar com Free Trial dá `BadRequest: Subscription does not have access to this product` na criação do deployment. Solução: converter para PAYG **antes** da Parte 6.
+
+### #2 — Quota OpenAI é por region, não por subscription
+
+Sua subscription pode ter 240K TPM em "East US" mas 0 TPM em "Brazil South". Cada region tem cota separada. Peça explicitamente para a region onde você vai criar o deployment (recomendo East US 2 — maior disponibilidade).
+
+### #3 — Vector dimension mismatch (Parte 5)
+
+`text-embedding-3-large` retorna vetores de **3072 dimensões**. Se você criar o índice AI Search com `dimensions=1536` (default antigo de `ada-002`), o `index_to_search.py` falha com `400 Bad Request: dimension mismatch`. Fixe `dimensions=3072` no schema do índice.
+
+### #4 — Foundry Hub é pré-existente, Project é novo
+
+A Parte 6 espera que `aifhub-apex-prod` JÁ EXISTA (criado no Bloco 2 dentro do `rg-helpsphere-ia`). Você só cria o **Project** novo `aifproj-helpsphere-rag` dentro do Hub. Se tentar criar Hub novo, terá custo duplicado e quebra do contrato pedagógico.
+
+### #5 — RBAC propaga lentamente
+
+Após `az role assignment create`, espere 30-60s antes de testar. Se rodar o script Python imediatamente, recebe `403 Forbidden` mesmo com a role atribuída.
+
+### #6 — AI Search Standard S1 é caro se esquecer ligado
+
+R$ 250/mês (R$ 8,30/dia). Se esquecer ligado o fim de semana, são R$ 16. Se esquecer um mês, são R$ 250. Por isso a regra de ouro é deletar o RG inteiro ao final.
+
+### #7 — Parte 8 depende de implementação no apex-helpsphere
+
+A Parte 8 plugga o RAG no apex-helpsphere via env var `RAG_ENABLED=true`, endpoint `/chat/rag` no backend e ChatPanel no frontend. Em [Q2-2026], 3 elementos podem ainda não estar implementados no template `apex-helpsphere`. Se chegar na Parte 8 e o frontend não responder, cheque `apex-helpsphere/CHANGELOG.md` para confirmar que está em versão ≥v2.2.0+ que tem RAG enabled. Caso esteja em v2.1.0, a Parte 8 fica em modo **simulado** via curl direto na Function App (Parte 7 cobre).
 
 ---
 
 ## 📞 Suporte
 
-- **Issues:** https://github.com/tftec-guilherme/apex-rag-lab/issues
+- **Issues técnicos:** https://github.com/tftec-guilherme/apex-rag-lab/issues
+- **Erros catalogados:** [`docs/troubleshooting.md`](./docs/troubleshooting.md) — RBAC 403, dimension mismatch, rate limit 429, OCR baixa qualidade, Translator detect falso, etc.
 - **Prof Guilherme Campos** (Coordenador da Disciplina) — disponível via TFTEC
+
+---
+
+## 🔗 Repos companion da Disciplina 06
+
+| Lab | Companion público | Foco |
+|-----|-------------------|------|
+| Inter (RAG) | **este repo** | Pipeline RAG passo-a-passo Portal-first |
+| Final (Agente) | [`apex-helpsphere-agente-lab`](https://github.com/tftec-guilherme/apex-helpsphere-agente-lab) | Foundry Agent SDK + n8n + MCP server |
+| Avançado (Prod) | [`apex-helpsphere-prod-lab`](https://github.com/tftec-guilherme/apex-helpsphere-prod-lab) | Production pipeline (CI/CD + APIM + observability) |
+
+E o SaaS host comum aos 3 labs: [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere)

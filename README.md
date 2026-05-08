@@ -1,159 +1,159 @@
 # apex-rag-lab
 
-> 🚨 **STATUS: DEPRECATED (2026-05-08)** 🚨
+> **Lab Intermediário — Disciplina 06: IA e Automação no Azure** · Pós-Graduação Arquitetura Cloud Azure · TFTEC + Anhanguera
 >
-> Este repositório foi **descontinuado** pela decisão prof Wave 4 (mega-sessão 2026-05-07/08). O Lab Intermediário RAG agora vive **direto no monorepo** da disciplina:
->
-> **Local canônico:** [`azure-retail/Disciplina_06_IA_Automacao_Azure_Ferramentas_Integradas/01_Aulas/Lab_Intermediario_RAG_HelpSphere_Guia_Portal.md`](https://github.com/tftec-guilherme/azure-retail/tree/main/Disciplina_06_IA_Automacao_Azure_Ferramentas_Integradas/01_Aulas)
->
-> **Por que deprecated?** A decisão Wave 4 cravou Portal-first refactor para os 3 Labs D06, e o Lab Intermediário virou content-rich monorepo (~2000 linhas, ≥12 [CRIAR-X], 13 marcadores Portal step-by-step). Manter um repo separado redundava esforço sem benefício.
->
-> **Aguardando:** `gh repo delete tftec-guilherme/apex-rag-lab` (precisa scope refresh `gh auth refresh -s delete_repo`).
->
-> **Repos companions ATIVOS dos outros Labs D06:**
-> - Lab Final → [`apex-helpsphere-agente-lab`](https://github.com/tftec-guilherme/apex-helpsphere-agente-lab)
-> - Lab Avançado → [`apex-helpsphere-prod-lab`](https://github.com/tftec-guilherme/apex-helpsphere-prod-lab)
+> Pipeline RAG production-grade passo-a-passo no Portal Azure · companion público do [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) · `version-anchor: Q2-2026` · `status: ATIVO Wave 4`
 
 ---
 
-## Conteúdo histórico (preservado abaixo apenas para referência)
+## Status
 
-> **Lab Intermediário — Disciplina 06: IA e Automação no Azure (Pós-Graduação Arquitetura Cloud Azure · TFTEC + Anhanguera)**
->
-> Pipeline RAG production-grade passo-a-passo no Portal Azure · companion didático do [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) · `version-anchor: Q2-2026`
+✅ **Companion público ATIVO do Lab Intermediário D06.** Todo o material que o aluno precisa para reproduzir o lab (guia completo, scripts Python copy-paste, instruções de download dos PDFs sample, snippets HTTP de teste) vive aqui.
 
-> ⚠️ **Status original:** `v0.1.0-init` — skeleton em construção. Conteúdo (8 PDFs sample-kb + 10 capítulos passo-a-passo + snippets + screenshots) será adicionado em sessões dedicadas. Veja [CHANGES.md](./CHANGES.md) para roadmap.
+> **Histórico:** este repo foi marcado DEPRECATED em 2026-05-08 sob a hipótese de que o conteúdo viveria apenas no monorepo `azure-retail`. A reversão foi cravada porque o monorepo é privado da TFTEC e o aluno não tem acesso. Detalhes em [`DECISION-LOG.md`](./DECISION-LOG.md). Conteúdo da arquitetura RAG anterior (Cognitive Search Skillset declarativo) preservado em [`archive/`](./archive/).
 
 ## 🎯 Objetivo pedagógico
 
-Construir, **manualmente via Portal Azure**, um pipeline RAG (Retrieval-Augmented Generation) sobre 8 PDFs corporativos realistas em pt-BR usando:
+Construir, **manualmente via Portal Azure**, um pipeline RAG (Retrieval-Augmented Generation) production-grade sobre 3 PDFs públicos da Microsoft Learn, usando 4 services AI integrados:
 
-- **Azure Storage Account** (Blob)
-- **Azure AI Document Intelligence** (`prebuilt-layout`)
-- **Azure AI Search** (Basic tier)
-- **Skillset declarativo** (encadeamento Doc Intelligence → splitter → embedding)
-- **Indexer** (consumindo blobs do Storage e populando o índice)
-- **Search Explorer** + sample HTML/JS de query
+- **Azure AI Document Intelligence** (`prebuilt-layout`) — chunking layout-aware
+- **Azure AI Vision** (OCR) — extração de texto de screenshots de tickets
+- **Azure AI Translator** — atendimento multilíngue (detect + translate)
+- **Azure AI Search Standard S1** (vector hybrid) — índice com embeddings 3072 dim
+- **Azure OpenAI** (`text-embedding-3-large` + `gpt-4.1-mini`) — embeddings + chat
+- **Azure Function App** (Python) — orquestrador `/chat/rag` plugado no HelpSphere
 
-Aluno termina o lab com **um índice RAG funcional** que responde perguntas dos tickets seed do `apex-helpsphere`.
+Aluno termina o lab com **um endpoint RAG funcional** plugado ao [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) que sugere resposta em <2s para tickets dos atendentes tier 1 da Apex Group.
 
-## 🛣️ Caminhos de execução
-
-| Caminho | Para quem | Tempo |
-|---|---|---|
-| **Portal step-by-step** (este repo) | Aluno aprendendo, primeira vez no Azure | 90-120min |
-| **Bicep automation** ([`azure-retail/.../lab-inter-bicep/`](https://github.com/tftec-guilherme/azure-retail)) | Aluno revisitando, verificando Bicep equivalente | 10-15min |
-
-> **Anti-drift garantido:** o Bicep em `azure-retail` é o **ground truth técnico** validado em CI (GitHub Actions). Se o Portal Azure mudar UI, só atualizamos screenshots — o Bicep continua válido.
-
-## 📦 O que está neste repo (quando completo)
+## 📦 Estrutura do repo
 
 ```
 apex-rag-lab/
 ├── README.md                          # ← você está aqui
+├── PARA-O-ALUNO.md                    # entrypoint pedagógico (gotchas + custo + quick start)
 ├── DECISION-LOG.md                    # decisões pedagógicas + arquiteturais
-├── CHANGES.md                         # diff vs guia v5 original + roadmap de versões
-├── PARA-O-ALUNO.md                    # gotchas + custo real + dicas
-├── docs/                              # 10 capítulos passo-a-passo Portal
-│   ├── 01-pre-requisitos.md
-│   ├── 02-criar-resource-group.md
-│   ├── 03-storage-account-blob.md
-│   ├── 04-upload-pdfs-sample-kb.md
-│   ├── 05-document-intelligence.md
-│   ├── 06-ai-search-service.md
-│   ├── 07-skillset-indexer.md
-│   ├── 08-test-search-explorer.md
-│   ├── 09-rag-query-sample.md
-│   ├── 10-cleanup.md
-│   └── troubleshooting.md
-├── sample-kb/                         # 8 PDFs corporativos realistas pt-BR (~25MB)
-│   ├── manual_operacao_loja_v3.pdf
-│   ├── runbook_sap_fi_integracao.pdf
-│   ├── faq_pedidos_devolucao.pdf
-│   ├── politica_reembolso_lojista.pdf
-│   ├── manual_pos_funcionamento.pdf
-│   ├── runbook_problemas_rede.pdf
-│   ├── faq_horario_atendimento.pdf
-│   ├── politica_dados_lgpd.pdf
-│   └── README.md
-├── snippets/                          # JSON/REST copy-paste extraídos do Bicep validado
-│   ├── skillset.json
-│   ├── index-schema.json
-│   ├── indexer.json
-│   └── query-rag-sample.http
-└── images/                            # Screenshots Portal Q2-2026 (capturados da execução real)
+├── CHANGES.md                         # diff vs guia v5 + roadmap de versões
+├── CHANGELOG.md                       # changelog técnico
+├── docs/
+│   ├── 00-guia-completo.md            # ★ guia integral 9 partes (~2070 linhas)
+│   ├── parte-01.md                    # navegação rápida — Provisionar fundação
+│   ├── parte-02.md                    # Document Intelligence
+│   ├── parte-03.md                    # AI Vision (OCR)
+│   ├── parte-04.md                    # AI Translator
+│   ├── parte-05.md                    # AI Search vector index
+│   ├── parte-06.md                    # Azure OpenAI deployments
+│   ├── parte-07.md                    # Function App orquestração
+│   ├── parte-08.md                    # Plug no apex-helpsphere
+│   ├── parte-09.md                    # Medição + Cleanup
+│   └── troubleshooting.md             # erros comuns + diagnóstico
+├── snippets/                          # scripts Python + HTTP copy-paste extraídos do guia
+│   ├── README.md
+│   ├── index_pdfs.py
+│   ├── create_search_index.py
+│   ├── index_to_search.py
+│   ├── function_app.py
+│   ├── eval_rag.py
+│   ├── requirements.txt
+│   ├── test_vision_ocr.sh
+│   ├── test_translator.sh
+│   └── test_chat_rag.http
+├── sample-kb/
+│   └── README.md                      # instruções para baixar 3 PDFs Microsoft Learn (~3MB)
+├── archive/                           # conteúdo pré-Wave 4 preservado para referência
+│   ├── README.md
+│   ├── docs-pre-wave4/                # 10 capítulos da arquitetura Cognitive Search Skillset
+│   ├── snippets-pre-wave4/            # 5 snippets JSON REST API
+│   └── sample-kb-pre-wave4/           # CONTEXT.md + outline do PDF #1
+├── images/                            # screenshots Portal Q2-2026 (capturados ao executar)
+├── LICENSE                            # MIT
+├── SECURITY.md
+└── CONTRIBUTING.md
 ```
 
-## 🚀 Como começar (quando v1.0 sair)
+## 🚀 Como começar
 
 ```bash
 git clone https://github.com/tftec-guilherme/apex-rag-lab.git
 cd apex-rag-lab
-# Abrir docs/01-pre-requisitos.md no editor de markdown
+
+# 1. Leia o entrypoint pedagógico (5 min)
+# Abra PARA-O-ALUNO.md
+
+# 2. Baixe os 3 PDFs sample (5 min)
+# Siga as instruções em sample-kb/README.md
+
+# 3. Execute o lab seguindo o guia (~8h em 1 sessão dedicada)
+# Abra docs/00-guia-completo.md OU navegue por partes em docs/parte-01.md → parte-09.md
+
+# 4. NÃO ESQUEÇA o cleanup (1 min, crítico para custo)
+az group delete --name rg-lab-intermediario --yes --no-wait
 ```
 
-## 💰 Custo estimado
+## 💰 Custo realista
 
-- **Document Intelligence** (free tier inicial · S0 após): ~R$ 0 - R$ 5
-- **AI Search Basic**: ~R$ 7/dia (~R$ 0,30/h)
-- **Storage Account** (8 PDFs ~25MB): ~R$ 0,01/mês
-- **Lab completo (1-2h de execução manual)**: **<R$ 10**
-- **Cleanup obrigatório:** `docs/10-cleanup.md` (delete RG = ~R$ 0/mês)
+| Cenário | Custo |
+|---------|-------|
+| Lab completo provisionado e deletado no mesmo dia (~8h) | **R$ 21-29** saindo do bolso |
+| Recursos esquecidos ligados 1 mês | R$ 280-320 |
+| Free Trial USD 200 | ❌ **NÃO funciona** — Azure OpenAI exige Pay-As-You-Go |
+
+**Recurso mais caro:** AI Search Standard S1 (R$ 8,30/dia, R$ 250/mês se ficar ligado). **Regra de ouro:** ao final, `az group delete --name rg-lab-intermediario --yes --no-wait`.
 
 ## 🧱 Pré-requisitos
 
-- Subscription Azure ativa com permissão de criar recursos (Owner ou Contributor + User Access Administrator)
-- ~2GB RAM livre no laptop
-- Navegador moderno (Edge/Chrome/Firefox)
-- (Opcional) Postman, Insomnia ou similar para testar queries REST
+- Subscription Azure **Pay-As-You-Go** (Free Trial não serve)
+- Cartão de crédito internacional vinculado
+- **Bloco 2 da Disciplina 06 concluído** — `rg-helpsphere-ia` provisionado com Foundry Hub `aifhub-apex-prod` + Project base `aifproj-helpsphere-base`
+- Quota Azure OpenAI aprovada na subscription com **≥30K TPM** para `text-embedding-3-large` e **≥30K TPM** para `gpt-4.1-mini` (peça via support request 1-3 dias antes — Pré-aula 0)
+- Azure CLI 2.x · Azure Developer CLI (`azd`) · VS Code com extensão Azure Functions
+- Python 3.11+ (para scripts de indexação)
+- Postman ou similar (para testes REST da Function App)
+- Owner ou (Contributor + User Access Administrator) no escopo da subscription
 
 ## 🏗️ Arquitetura (high-level)
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  Azure Subscription (aluno)                                   │
-│                                                                │
-│  Resource Group: rg-apex-rag-lab-{aluno}                      │
-│                                                                │
-│  ┌──────────────┐    ┌─────────────────────┐                 │
-│  │   Storage    │───▶│  Document           │                 │
-│  │   Account    │    │  Intelligence       │                 │
-│  │  (8 PDFs)    │    │  (prebuilt-layout)  │                 │
-│  └──────────────┘    └─────────────────────┘                 │
-│         │                      │                               │
-│         │                      ▼                               │
-│         │              ┌─────────────────┐                    │
-│         └─────────────▶│  AI Search      │                    │
-│                        │  (Basic tier)   │                    │
-│                        │  + Skillset     │                    │
-│                        │  + Indexer      │                    │
-│                        └─────────────────┘                    │
-│                                │                               │
-│                                ▼                               │
-│                        Search Explorer                         │
-│                        (queries RAG)                           │
-└──────────────────────────────────────────────────────────────┘
+PDFs (3 públicos Microsoft Learn)
+   │
+   ▼
+Document Intelligence (prebuilt-layout) ─── chunks layout-aware
+   │
+   ▼
+text-embedding-3-large (3072 dim) ─── embeddings
+   │
+   ▼
+AI Search Standard S1 ─── índice vector hybrid
+   │
+   ▼
+Function App `/chat/rag` ─── orquestrador (Python)
+   │   ├─ retrieval (top-5 chunks)
+   │   ├─ gpt-4.1-mini (chat completion grounded)
+   │   ├─ AI Vision (OCR de screenshots opcional)
+   │   └─ AI Translator (multilíngue opcional)
+   ▼
+apex-helpsphere frontend ─── botão "Sugerir resposta"
 ```
 
-> Diagrama detalhado virá em `docs/01-pre-requisitos.md`.
+## 📚 Cross-references
 
-## 📚 Referências
-
-- [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) — SaaS HelpSphere base (tickets seed que o RAG resolve)
-- [`azure-retail`](https://github.com/tftec-guilherme/azure-retail) — monorepo da Pós-Graduação · Bicep validation harness em `Disciplina_06_*/03_Aplicações/lab-inter-bicep/`
-- Microsoft Learn — Azure AI Search [skillsets](https://learn.microsoft.com/azure/search/cognitive-search-working-with-skillsets)
-- Microsoft Learn — Document Intelligence [`prebuilt-layout`](https://learn.microsoft.com/azure/ai-services/document-intelligence/concept-layout)
+- [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) — SaaS host HelpSphere (Parte 8 plugga o RAG aqui)
+- [`apex-helpsphere-agente-lab`](https://github.com/tftec-guilherme/apex-helpsphere-agente-lab) — companion do Lab **Final** D06 (Agente Foundry + n8n)
+- [`apex-helpsphere-prod-lab`](https://github.com/tftec-guilherme/apex-helpsphere-prod-lab) — companion do Lab **Avançado** D06 (production-grade pipeline)
+- Microsoft Learn — [Azure AI Search vector index](https://learn.microsoft.com/azure/search/vector-search-overview)
+- Microsoft Learn — [Document Intelligence prebuilt-layout](https://learn.microsoft.com/azure/ai-services/document-intelligence/concept-layout)
+- Microsoft Learn — [Azure OpenAI text-embedding-3-large](https://learn.microsoft.com/azure/ai-services/openai/concepts/models#embeddings-models)
 
 ## 🔖 Versão
 
-`v0.1.0-init` · `version-anchor: Q2-2026` · MCP spec irrelevante (lab não usa MCP — isso fica pro Lab Final)
+`v0.2.0` (Wave 4 restored) · `version-anchor: Q2-2026`
 
-**Política de revisão anual:**
+### Política de revisão anual
+
 - Comparar Portal screenshots vs UI atual (capturar novos se >30% mudou)
-- Verificar se `prebuilt-layout` continua o modelo recomendado pela Microsoft
-- Validar pricing AI Search Basic + Document Intelligence (mudam a cada ~6-12 meses)
-- Re-rodar Bicep harness em `azure-retail/.../lab-inter-bicep/` em conta limpa
+- Verificar disponibilidade dos modelos `text-embedding-3-large` e `gpt-4.1-mini` (Microsoft pode bumparr versão default)
+- Validar pricing AI Search Standard S1 + Document Intelligence S0 (mudam a cada ~6-12 meses)
+- Verificar URLs dos 3 PDFs Microsoft Learn (caso movam de path)
 
 ## 📜 License
 
-[MIT](./LICENSE) · TFTEC Educational Use · Conteúdo fictício corporativo Apex Group · Q2-2026
+[MIT](./LICENSE) · TFTEC Educational Use · Q2-2026

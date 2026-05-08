@@ -1,0 +1,15 @@
+# snippets/test_chat_rag.http — extracted from docs/00-guia-completo.md (Lab Intermediário D06)
+# Wave 4 architecture · version-anchor: Q2-2026
+# Companion: https://github.com/tftec-guilherme/apex-rag-lab
+#
+# Substitua {rand} pela URL real da Function App e <function-key> pela key do portal.
+# Use com VS Code REST Client extension ou Postman.
+
+POST https://func-helpsphere-rag-{rand}.azurewebsites.net/api/tickets/4521/suggest
+Content-Type: application/json
+x-functions-key: <function-key do portal>
+
+{
+  "description": "Lojista relata que pedido 84512 não foi entregue há 7 dias e está solicitando reembolso. Como proceder?",
+  "attachment_urls": []
+}

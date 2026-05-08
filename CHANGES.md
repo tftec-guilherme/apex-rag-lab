@@ -6,6 +6,56 @@
 
 ---
 
+## v0.2.0 (2026-05-09) — Wave 4 restored ★
+
+### Status
+
+**ATIVO.** Companion público restaurado após reversão da deprecation 2026-05-08. Conteúdo Wave 4 cravado: guia integral 9 partes (~2070 linhas), scripts Python copy-paste em `snippets/`, instruções dos 3 PDFs públicos Microsoft Learn em `sample-kb/`.
+
+### Diff vs v0.1.0-init
+
+- ❌ **Removido (arquivado em `archive/`):**
+  - `docs/01-pre-requisitos.md` → `docs/10-cleanup.md` (10 capítulos da arquitetura Cognitive Search Skillset)
+  - `docs/troubleshooting.md` (versão pre-Wave 4 — sucessor reescrito)
+  - `snippets/data-source.json`, `indexer.json`, `index-schema.json`, `skillset.json`, `query-rag-sample.http`
+  - `sample-kb/CONTEXT.md` (200 linhas de curadoria @analyst para 8 PDFs proprietários)
+  - `sample-kb/source/01-faq_horario_atendimento.outline.md`
+- ✅ **Adicionado:**
+  - `docs/00-guia-completo.md` — guia integral Wave 4 (cópia ativa do canônico no monorepo `azure-retail`, ~2074 linhas)
+  - `docs/parte-01.md` → `docs/parte-09.md` — thin wrappers para navegação parte-a-parte
+  - `docs/troubleshooting.md` — erros comuns Wave 4 (RBAC 403, vector dim mismatch 3072, rate limit 429, OCR baixa qualidade, Translator detect falso, Function App cold start)
+  - `snippets/index_pdfs.py` — chunking layout-aware via Document Intelligence
+  - `snippets/create_search_index.py` — schema vector field 3072 dim
+  - `snippets/index_to_search.py` — embeddings + populates index
+  - `snippets/function_app.py` — orquestrador `/chat/rag`
+  - `snippets/eval_rag.py` — precision@5 + latency + custo
+  - `snippets/requirements.txt` — Python deps
+  - `snippets/test_vision_ocr.sh`, `test_translator.sh`, `test_chat_rag.http` — testes
+  - `sample-kb/README.md` — instruções Print-to-PDF dos 3 PDFs Microsoft Learn
+  - `archive/` (raiz) — preservação histórica de pre-Wave 4 com `archive/README.md` explicando contexto
+- 🔄 **Atualizado:**
+  - `README.md` — remove banner DEPRECATED, status ATIVO Wave 4, arquitetura 4 services AI + Function App
+  - `PARA-O-ALUNO.md` — Quick Start, 7 surpresas pedagógicas catalogadas, custo realista R$ 21-29 mesmo dia, regra de ouro `az group delete`
+  - `DECISION-LOG.md` — Decisões #6 (reversão deprecation), #7 (Skillset → Python imperativo), #8 (3 PDFs públicos), #9 (Standard S1)
+  - `CHANGELOG.md` — entrada v0.2.0
+  - `CHANGES.md` — este arquivo
+
+### Diff vs guia atual no monorepo (`azure-retail/.../Lab_Intermediario_RAG_HelpSphere_Guia_Portal.md`)
+
+- ✅ **Mantido 1:1:** todos os 9 capítulos, comandos `az`, scripts Python, JSONs, screenshots-placeholders
+- 🆕 **Adicionado neste repo (não existe no monorepo):**
+  - Header companion-público no topo de `docs/00-guia-completo.md` (cross-links para snippets, sample-kb, apex-helpsphere)
+  - Thin wrappers `parte-01.md` → `parte-09.md` para navegação rápida
+  - Snippets isolados (no monorepo o código está inline no markdown)
+  - `archive/` com referência histórica
+- 🔄 **Source of truth:** o monorepo `azure-retail` é a fonte canônica do guia. Este repo público recebe sync downstream a cada bump v0.X.0.
+
+### Política de sync com monorepo
+
+Toda mudança no `Lab_Intermediario_RAG_HelpSphere_Guia_Portal.md` no monorepo deve gerar PR neste repo público dentro de 24-48h, com bump de patch (v0.2.0 → v0.2.1). Bumps minor (v0.2.x → v0.3.0) são para mudanças estruturais (nova Parte, mudança de modelo, mudança de tier).
+
+---
+
 ## v0.1.0-init (2026-05-06)
 
 ### Status
