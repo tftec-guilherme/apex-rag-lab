@@ -1,172 +1,103 @@
 <div align="center">
 
-# apex-rag-lab — Lab Intermediário D06 (fork funcional do `apex-helpsphere` + RAG aplicado)
+# apex-rag-lab — Lab Intermediário D06 (RAG)
 
-**Este repositório é o companion do Lab Intermediário (RAG) da Disciplina 06.**
-Faça `azd up` daqui — não do `apex-helpsphere` base.
+**Pipeline RAG production-grade passo-a-passo no Portal Azure**
+Disciplina 06: IA e Automação no Azure · Pós-Graduação Arquitetura Cloud Azure · TFTEC + Anhanguera
 
-📚 Para o **guia pedagógico do Lab Inter** (entrypoint, gotchas, ordem de execução), abra **[`README-LAB-INTER.md`](./README-LAB-INTER.md)** e **[`PARA-O-ALUNO-LAB-INTER.md`](./PARA-O-ALUNO-LAB-INTER.md)**.
-
-📦 O conteúdo do README abaixo é o do **template base `apex-helpsphere`** (snapshot do commit `98ce579`) com o **plug RAG aplicado por cima** (PR #20 — `RAG_ENABLED` + `<ChatPanel />` + `?chat=1` + endpoint `/chat/rag`). Use como referência técnica do template.
-
----
-
-# HelpSphere
-
-**Template pedagógico Azure production-grade — multi-tenant ITSM com IA modular.**
-
-Pós-Graduação Avançada de Cloud com Azure · Disciplina 06.
-
-[![Bicep validation](https://github.com/tftec-guilherme/apex-helpsphere/actions/workflows/azure-dev-validation.yaml/badge.svg?branch=main)](https://github.com/tftec-guilherme/apex-helpsphere/actions/workflows/azure-dev-validation.yaml)
-[![.NET](https://github.com/tftec-guilherme/apex-helpsphere/actions/workflows/dotnet-test.yaml/badge.svg?branch=main)](https://github.com/tftec-guilherme/apex-helpsphere/actions/workflows/dotnet-test.yaml)
-[![Frontend](https://github.com/tftec-guilherme/apex-helpsphere/actions/workflows/frontend.yaml/badge.svg?branch=main)](https://github.com/tftec-guilherme/apex-helpsphere/actions/workflows/frontend.yaml)
-[![Python](https://github.com/tftec-guilherme/apex-helpsphere/actions/workflows/python-test.yaml/badge.svg?branch=main)](https://github.com/tftec-guilherme/apex-helpsphere/actions/workflows/python-test.yaml)
-[![Release](https://img.shields.io/github/v/release/tftec-guilherme/apex-helpsphere?include_prereleases&color=0078D4)](https://github.com/tftec-guilherme/apex-helpsphere/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 </div>
 
 ---
 
-## O que é
+## 🎯 O que você constrói
 
-Plataforma operacional de tickets do **Apex Group** (holding fictícia de varejo, 5 marcas, ~3.500 atendentes, 12k tickets/mês). Você roda `azd up` e ganha **9-14 minutos** para focar no que importa: pipeline RAG, agentes Foundry, automação.
+Um pipeline **RAG (Retrieval-Augmented Generation) production-grade** sobre 3 PDFs públicos da Microsoft Learn, construído manualmente via Portal Azure usando 6 services AI integrados (Document Intelligence layout-aware, AI Vision OCR, AI Translator multilíngue, AI Search Standard S1 vector hybrid, Azure OpenAI `text-embedding-3-large` + `gpt-4.1-mini`, Function App orquestrador). Você termina o lab com **um endpoint RAG funcional** plugado ao [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) que sugere resposta em <2s para tickets dos atendentes tier 1 da Apex Group.
 
-> **Pedagógico, não brinquedo.** Auth two-app Microsoft Entra ID, Managed Identity, RLS-like multi-tenancy, Bicep IaC, observabilidade OpenTelemetry, container deploy. Decisões de arquitetura defendíveis em audiência sênior — documentadas no [`DECISION-LOG.md`](./DECISION-LOG.md) (23 decisões cravadas).
+## 🚀 Quick start
 
-## Quick start (aluno) — local via VSCode
+```bash
+git clone https://github.com/tftec-guilherme/apex-rag-lab.git
+cd apex-rag-lab
 
-```powershell
-# 1. Fork em https://github.com/tftec-guilherme/apex-helpsphere → seu fork
-# 2. Clone no VSCode (Ctrl+Shift+P → Git: Clone)
-git clone https://github.com/SEU_USUARIO/apex-helpsphere.git
-cd apex-helpsphere
+# 1. Leia o entrypoint pedagógico (5 min)
+# Abra PARA-O-ALUNO-LAB-INTER.md
 
-# 3. Pre-flight (~30s, 8 validações)
-pwsh ./scripts/preflight.ps1   # Windows
-./scripts/preflight.sh          # macOS/Linux/WSL
+# 2. Baixe os 3 PDFs sample (5 min)
+# Siga sample-kb/README.md
 
-# 4. Login Azure
-az login
-azd auth login
+# 3. Execute o lab (~8h em sessão dedicada)
+# Abra docs/00-guia-completo.md OU navegue por partes em docs/parte-01.md → parte-09.md
 
-# 5. Environment azd + flags SaaS-only
-azd env new helpsphere-saas-{seu-id}
-azd env set DEPLOY_IA_STACK "false"          # IA fica para os labs
-azd env set USE_MULTIMODAL "false"
-azd env set SKIP_ROLE_ASSIGNMENTS "false"    # sua conta Owner cria roles
-azd env set USE_AUTHENTICATION "true"
-azd env set USE_SQL_SERVER "true"
-azd env set AZURE_LOAD_SEED_DATA "true"
-azd env set DEPLOYMENT_TARGET "containerapps"
-azd env set AZURE_LOCATION "westus3"
-
-# 6. Deploy completo
-azd up                           # ~9-14min
+# 4. CLEANUP CRÍTICO ao final (~1 min)
+az group delete --name rg-lab-intermediario --yes --no-wait
 ```
 
-📘 **Detalhes completos + 35 surpresas pedagógicas catalogadas:** [`PARA-O-ALUNO.md`](./PARA-O-ALUNO.md)
+## 📚 Estrutura do lab (9 partes · 8 horas)
 
-## Arquitetura
-
-![Arquitetura HelpSphere v2](./docs/architecture.png)
-
-> Diagrama renderizado a partir do HTML interativo `docs/helpsphere_architecture_v2.html` (Apex Executivo brand). Para navegar interativo, abra o HTML no browser.
-
-| Formato | Arquivo | Quando usar |
+| Parte | Duração | Atividade |
 |---|---|---|
-| **HTML interativo (v2 — primário)** | [`docs/helpsphere_architecture_v2.html`](./docs/helpsphere_architecture_v2.html) | Navegação pedagógica em apresentações; clone + abra no browser |
-| **PNG 2x retina (renderizado do v2)** | [`docs/architecture.png`](./docs/architecture.png) | Embed em README, slides, docs |
-| **Diagrama draw.io editável (v1)** | [`docs/architecture.drawio`](./docs/architecture.drawio) | Edição via [draw.io](https://app.diagrams.net) ou desktop |
-| **SVG (v1)** | [`docs/architecture.svg`](./docs/architecture.svg) | Web/scaling |
+| Parte 1 | 30min | Provisionar fundação (RG, Storage, identidades) |
+| Parte 2 | 1.5h | Document Intelligence (indexação dos 3 PDFs) |
+| Parte 3 | 30min | Azure AI Vision (OCR de screenshots — sub-feature) |
+| Parte 4 | 30min | Azure AI Translator (multilíngue — sub-feature) |
+| Parte 5 | 1.5h | Azure AI Search (vector index + hybrid) |
+| Parte 6 | 1h | Azure OpenAI deployments (embeddings + chat) |
+| Parte 7 | 1h | Function App (endpoint `/api/tickets/{id}/suggest`) |
+| Parte 8 | 30min | Plug no stack apex-helpsphere real (Container Apps) |
+| Parte 9 | 1h | Medição (precision@5, latency, custo) + cleanup |
 
-**7 camadas:** Edge · Apresentação · Container Apps Env · AI Platform · Identity · Observabilidade/DevOps · Persistence.
+## 💰 Custo realista
 
-**Princípios não-negociáveis (v2.1.0):**
+| Cenário | Custo |
+|---------|-------|
+| Lab completo provisionado e deletado no mesmo dia (~8h) | **R$ 21-29** saindo do bolso |
+| Recursos esquecidos ligados 1 mês | R$ 280-320 |
+| Free Trial USD 200 | ❌ **NÃO funciona** — Azure OpenAI exige Pay-As-You-Go |
 
-- **Local-first via VSCode:** `azd up` com sua conta Azure é o caminho do aluno. CI/CD descontinuado em conta pessoal por ABAC condition (ver `APPENDIX-SURPRESAS.md` #31).
-- **Parametrização:** Bicep params + `azd env` (DEPLOY_IA_STACK, SKIP_ROLE_ASSIGNMENTS) — zero hardcode entre subscriptions.
-- **SaaS-only base:** IA stack (OpenAI/AI Search/DocIntel/Vision/Speech/Cosmos) NÃO é provisionada aqui — fica para os 3 labs (Inter/Final/Avançado), passo-a-passo Portal Azure.
-- **Production-grade pedagogicamente defendível:** sem atalhos de segurança "para o aluno entender mais rápido".
+**Recurso mais caro:** AI Search Standard S1 (R$ 8,30/dia, R$ 250/mês se ficar ligado). **Regra de ouro:** ao final, `az group delete --name rg-lab-intermediario --yes --no-wait`.
 
-## Stack
+## 🧱 Stack provisionado
 
-| Camada | Tech |
-|---|---|
-| **Frontend** | React 18 + Vite + TypeScript · Apex Executivo design system (Fraunces + Inter Tight + JetBrains Mono) · Recharts |
-| **Backend** | Python 3.13 + Quart (auth, /chat dormente, /tenants/me, /auth_setup runtime config) |
-| **Tickets API** | .NET 10 Minimal API + Dapper · Token explicit injection ([Decisão #22](./DECISION-LOG.md)) |
-| **IaC** | Azure Bicep (25+ recursos parametrizados) · `azd` v1.23+ |
-| **Auth** | Microsoft Entra ID two-app pattern · Directory Extension `app_tenant_id` ([Decisão #19-#21](./DECISION-LOG.md)) |
-| **Data** | Azure SQL Serverless (5 tenants seed Apex, 50 tickets pt-BR, 70 comments) |
-| **AI Platform** | Azure OpenAI (gpt-4.1-mini · text-embedding-3-large) · AI Search · Document Intelligence · Vision |
-| **Compute** | Azure Container Apps + ACR (build remoto via ACR Tasks) |
-| **Telemetria** | Application Insights + Log Analytics + dashboard pré-provisionado |
+- **Azure AI Document Intelligence** — chunking layout-aware (`prebuilt-layout`)
+- **Azure AI Vision** — OCR de screenshots de tickets
+- **Azure AI Translator** — atendimento multilíngue (detect + translate)
+- **Azure AI Search Standard S1** — índice vector hybrid (3072 dim)
+- **Azure OpenAI** — `text-embedding-3-large` + `gpt-4.1-mini`
+- **Azure Function App (Python)** — orquestrador `/chat/rag` plugado no HelpSphere
 
-## Estrutura
+> Detalhes profundos da stack, pré-requisitos, quotas, e os 15 arquivos do plug RAG no `apex-helpsphere`: ver [`README-LAB-INTER.md`](./README-LAB-INTER.md).
 
-```
-apex-helpsphere/
-├── app/
-│   ├── backend/                  # Python Quart — auth + /chat (Lab Intermediário ativa) + tenants
-│   ├── frontend/                 # React + Vite — Apex Executivo design system
-│   ├── tickets-service/          # .NET 10 Minimal API + Dapper — endpoints CRUD + /stats
-│   └── functions/                # Azure Functions — RAG cloud ingestion (Lab Avançado)
-├── infra/
-│   ├── main.bicep                # 6 params expostos · CORS dinâmico · audience v2
-│   └── main.parameters.json
-├── scripts/
-│   ├── preflight.{ps1,sh}        # 8 validações ~30s antes de azd up
-│   ├── auth_init.py              # 2 App Registrations + Directory Extension idempotente
-│   ├── auth_update.py            # redirect URIs + extension value no user
-│   ├── setup_search_index.py     # cria gptkbindex idempotente (postprovision)
-│   └── run_prepdocs.{ps1,sh}     # wrapper honrando SKIP_PREPDOCS
-├── data/
-│   ├── migrations/               # SQL Server schema (idempotente)
-│   └── seed/                     # 5 tenants Apex + 50 tickets pt-BR + 70 comments
-├── docs/
-│   ├── architecture.{drawio,png,svg}
-│   ├── helpsphere_architecture_v2.html
-│   └── plans/v2.1.0-execution.md
-└── .github/workflows/
-    ├── azure-dev.yml             # Deploy completo (azd provision + deploy)
-    ├── azure-dev-validation.yaml # Bicep validate em PR
-    ├── python-test.yaml          # ruff + black + pytest (matrix simplificada v2.1.0)
-    ├── frontend.yaml             # prettier + tsc + vite build
-    ├── dotnet-test.yaml          # build + xunit
-    └── setup-aad.yml             # workflow_dispatch standalone para AAD recreate
-```
-
-## Documentação
+## 📖 Documentação
 
 | Doc | Quando ler |
 |---|---|
-| [`PARA-O-ALUNO.md`](./PARA-O-ALUNO.md) | Quick start + checklist de pré-requisitos + surpresas pedagógicas catalogadas |
+| [`PARA-O-ALUNO-LAB-INTER.md`](./PARA-O-ALUNO-LAB-INTER.md) | Entrypoint — pré-requisitos, gotchas (7 surpresas reais), ordem de execução |
+| [`README-LAB-INTER.md`](./README-LAB-INTER.md) | Detalhes profundos: objetivos pedagógicos, 15 arquivos do plug RAG, estrutura repo, arquitetura high-level |
+| [`docs/00-guia-completo.md`](./docs/00-guia-completo.md) | Guia integral 9 partes (~2120 linhas) |
+| [`docs/troubleshooting.md`](./docs/troubleshooting.md) | Erros comuns + diagnóstico (RBAC 403, dimension mismatch, rate limit 429, etc.) |
+| [`DECISION-LOG.md`](./DECISION-LOG.md) | Decisões pedagógicas + arquiteturais cravadas |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Histórico de releases |
-| [`SECURITY.md`](./SECURITY.md) | Política de segurança e disclosure |
 
-## Roadmap pedagógico
+## 🔗 Companion repos
 
-| Fase | Lab | O que adiciona |
-|---|---|---|
-| **v2.1.0** (atual) | Setup base | Infra + auth two-app + tickets + dashboard executivo + telemetria |
-| Próximo | **Lab Intermediário** (M02-M05) | Pipeline RAG: AI Search index custom + embeddings + chat com citation rendering sobre 62 PDFs Apex |
-| Depois | **Lab Final** (M06) | Agentes Foundry com tools + Speech STT/TTS + integração com tickets |
-| Sinergia D04 | **Lab Avançado** | Tickets-service publica `TicketStatusChanged` no Service Bus + Logic App reage + dashboard tempo real |
+- [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) — template SaaS base (Bloco 2, sem IA stack); a Parte 8 plugga o RAG aqui
+- [`apex-helpsphere-agente-lab`](https://github.com/tftec-guilherme/apex-helpsphere-agente-lab) — Lab Final D06 (Agentes Foundry + Speech)
+- [`apex-helpsphere-prod-lab`](https://github.com/tftec-guilherme/apex-helpsphere-prod-lab) — Lab Avançado D06 (production patterns)
 
-## Contribuir / Reportar bugs
+## 📦 Sobre o template base apex-helpsphere
 
-- **Issues:** [GitHub Issues](https://github.com/tftec-guilherme/apex-helpsphere/issues)
-- **PRs:** convenção `feat:` / `fix:` / `docs:` / `chore:` + referência a Decisões `#N` quando aplicável (ver `DECISION-LOG.md`)
+Este repo herdou o código do template `apex-helpsphere` (snapshot do commit `98ce579`) com o plug RAG aplicado por cima (PR #20 — `RAG_ENABLED` + `<ChatPanel />` + `?chat=1` + endpoint `/chat/rag`). Para detalhes técnicos do template SaaS base (auth two-app, Bicep, tickets-service .NET, frontend React), consulte o [README do `apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere/blob/main/README.md).
 
-## License & atribuição
+## 📜 License
 
-[MIT](./LICENSE) · Forked from [Azure-Samples/azure-search-openai-demo](https://github.com/Azure-Samples/azure-search-openai-demo) (template upstream original — ver `LICENSE.upstream`).
+[MIT](./LICENSE) · TFTEC Educational Use · Q2-2026
 
 ---
 
 <div align="center">
 
-**Prof. Guilherme Campos** · Pós-Graduação Avançada de Cloud com Azure
+**Prof. Guilherme Campos** · Pós-Graduação Avançada de Cloud com Azure · TFTEC + Anhanguera
 
 </div>

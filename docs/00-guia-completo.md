@@ -195,8 +195,8 @@ flowchart TB
 | Parte 2 | 1.5h | Document Intelligence (indexação dos 3 PDFs) |
 | Parte 3 | 30min | Azure AI Vision (OCR de screenshots — sub-feature) |
 | Parte 4 | 30min | Azure AI Translator (multilíngue — sub-feature) |
-| Parte 5 | 1.5h | Azure AI Search (vector index + hybrid) |
-| Parte 6 | 1h | Azure OpenAI deployments (embeddings + chat) |
+| Parte 5 | 40min | Azure AI Search (criar service + schema do index) |
+| Parte 6 | 1h50min | Azure OpenAI deployments (embeddings + chat) + indexar chunks |
 | Parte 7 | 1h | Function App (endpoint `/api/tickets/{id}/suggest`) |
 | Parte 8 | 30min | Plug no stack apex-helpsphere real (Container Apps) |
 | Parte 9 | 1h | Medição (precision@5, latency, custo) + cleanup |
@@ -809,7 +809,7 @@ Saída esperada: `[{"translations":[{"text":"Olá, não consigo acessar o sistem
 
 ---
 
-# Parte 5 — Azure AI Search (vector index + hybrid) — 1.5h
+# Parte 5 — Azure AI Search (vector index + hybrid) — 40min
 
 ## Passo 5.1 — Criar Azure AI Search service
 
@@ -988,15 +988,18 @@ python create_search_index.py
 
 Saída: `[+] Index 'helpsphere-kb' criado com vector + semantic ranker`
 
-## Passo 5.5 — Indexar chunks com embeddings
+## ✅ Checkpoint Parte 5
 
-Antes de indexar, precisamos do Azure OpenAI deployado para gerar embeddings. Vamos pular para a Parte 6 brevemente, voltar aqui depois.
+- [ ] Search service `srch-helpsphere-rag` criado (Standard S1)
+- [ ] `SEARCH_ENDPOINT` e `SEARCH_ADMIN_KEY` anotados
+- [ ] RBAC atribuído (Contributor + Index Data Contributor)
+- [ ] Index `helpsphere-kb` criado com vector + semantic ranker (3072 dims)
 
-> **Saiba que esta parte depende da Parte 6 estar concluída** — vou indicar um marcador de retorno após Passo 6.4.
+> A indexação dos chunks com embeddings depende dos deployments do Azure OpenAI (Parte 6) e está nos Passos 6.5 e 6.6 abaixo.
 
 ---
 
-# Parte 6 — Azure OpenAI deployments (1h)
+# Parte 6 — Azure OpenAI deployments + indexação (1h50min)
 
 ## Passo 6.1 — Confirmar Foundry Project (criado no Bloco 2)
 
@@ -1072,21 +1075,9 @@ No Foundry portal → **Chat** (Playground):
 
 Saída esperada: o agente cumprimenta usando o tom da Apex.
 
-## ✅ Checkpoint Parte 6
+> **Próximo passo:** com os deployments OpenAI prontos, podemos indexar os chunks (que já foram extraídos pelo Document Intelligence na Parte 2) gerando embeddings via `text-embedding-3-large` e enviando ao index `helpsphere-kb` criado na Parte 5.
 
-- [ ] Project `aifproj-helpsphere-rag` criado
-- [ ] Deployment `text-embedding-3-large` ativo
-- [ ] Deployment `gpt-4.1-mini` ativo
-- [ ] AOAI endpoint e key anotados
-- [ ] Playground respondeu
-
----
-
-# Parte 5 (continuação) — Indexar chunks com embeddings (50min)
-
-> **Volte para a Parte 5.** Agora que o embedding está deployado, podemos indexar.
-
-## Passo 5.5 — Script de indexação com embeddings
+## Passo 6.5 — Script de indexação com embeddings
 
 Crie `index_to_search.py`:
 
@@ -1200,7 +1191,7 @@ Saída esperada:
 
 > **Tempo:** ~3-5 minutos. **Custo embedding:** ~R$ 4-5.
 
-## Passo 5.6 — Validar index pelo Search Explorer
+## Passo 6.6 — Validar index pelo Search Explorer
 
 No Portal Azure → `srch-helpsphere-rag` → **Search explorer**:
 
@@ -1235,9 +1226,13 @@ Query híbrida (BM25 + vector) com filtro:
 
 > **Atenção:** Search Explorer no portal não suporta vectorQueries com text input direto (precisa array de floats). Para teste rápido, use BM25 simples e Function App vai testar híbrido depois.
 
-## ✅ Checkpoint Parte 5 (completa)
+## ✅ Checkpoint Parte 6
 
-- [ ] Index `helpsphere-kb` criado com vector + semantic
+- [ ] Project `aifproj-helpsphere-rag` criado
+- [ ] Deployment `text-embedding-3-large` ativo
+- [ ] Deployment `gpt-4.1-mini` ativo
+- [ ] AOAI endpoint e key anotados
+- [ ] Playground respondeu
 - [ ] ~110 chunks indexados (verificável em "Search explorer" com `*`)
 - [ ] Filtro por `category` funciona
 - [ ] Embeddings preenchidos (`content_vector` não-nulo)
