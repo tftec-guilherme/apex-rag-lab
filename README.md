@@ -25,6 +25,26 @@ Construir, **manualmente via Portal Azure**, um pipeline RAG (Retrieval-Augmente
 
 Aluno termina o lab com **um endpoint RAG funcional** plugado ao [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) que sugere resposta em <2s para tickets dos atendentes tier 1 da Apex Group.
 
+## 🔌 Estado final do plug no `apex-helpsphere` (referência didática)
+
+A **Parte 8** deste guia ensina como **plugar** o RAG no template `apex-helpsphere` (env vars + ChatPanel React + endpoint backend `/chat/rag` proxy + flag `?chat=1`). Você implementa esse plug do zero seguindo o passo-a-passo do guia, no seu fork.
+
+Se quiser consultar como fica o **estado final implementado** dos 15 arquivos modificados pelo plug (Bicep + backend Python + frontend React + testes Pytest), a referência canônica está na branch [`demo/rag-lab-inter`](https://github.com/tftec-guilherme/apex-helpsphere/tree/demo/rag-lab-inter) do `apex-helpsphere`:
+
+| Arquivo | Tipo | O que faz |
+|---|---|---|
+| `infra/main.bicep` + `infra/main.parameters.json` | Bicep | Params `ragEnabled`, `ragFunctionUrl`, `ragFunctionKey` (secure) → env vars Container App |
+| `app/backend/blueprints/rag_chat.py` | Python | Endpoint `POST /chat/rag` com JWT validation (`app_tenant_id`) + proxy para Function App |
+| `app/backend/app.py` + `blueprints/__init__.py` | Python | Registro do blueprint + flag `ragEnabled` em `/auth_setup` |
+| `app/frontend/src/components/ChatPanel/{ChatPanel.tsx,module.css,index.ts}` | React | Painel flutuante bottom-right com form (ticket + descrição) + result (suggestion + confidence + citations) + minimize/close |
+| `app/frontend/src/api/rag.ts` + `api/index.ts` | TypeScript | Cliente HTTP do `/chat/rag` |
+| `app/frontend/src/Shell.tsx` | React | Hook `useChatQueryFlag` + triple-gate `ragEnabled && enableChat && ?chat=1` |
+| `app/frontend/src/authConfig.ts` | TypeScript | Propaga flag `ragEnabled` ao frontend via `/auth_setup` |
+| `tests/test_rag_chat.py` | Pytest | 256 linhas testando endpoint proxy (200/401/502/503) |
+| `CHANGELOG.md` + `PARA-O-ALUNO.md` | Docs | Notas pedagógicas da feature |
+
+> ⚠️ **A branch `main` do `apex-helpsphere` NÃO contém esse código** — para fins pedagógicos, você implementa do zero seguindo este guia (`apex-rag-lab`). A branch `demo/rag-lab-inter` é apenas referência para consulta caso fique travado em algum passo da Parte 8 — **não dê fork dela como ponto de partida do lab**, dê fork de `main` e siga o guia.
+
 ## 📦 Estrutura do repo
 
 ```
