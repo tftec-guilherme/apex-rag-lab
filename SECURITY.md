@@ -1,50 +1,40 @@
-# Security Policy
+<!-- BEGIN MICROSOFT SECURITY.MD V0.0.5 BLOCK -->
+# Security
 
-> `version-anchor: Q2-2026`
+Microsoft takes the security of our software products and services seriously, which includes all source code repositories managed through our GitHub organizations, which include [Microsoft](https://github.com/Microsoft), [Azure](https://github.com/Azure), [DotNet](https://github.com/dotnet), [AspNet](https://github.com/aspnet), [Xamarin](https://github.com/xamarin), and [our GitHub organizations](https://opensource.microsoft.com/).
 
-## Reporting a Vulnerability
+If you believe you have found a security vulnerability in any Microsoft-owned repository that meets [Microsoft's definition of a security vulnerability](<https://docs.microsoft.com/previous-versions/tn-archive/cc751383(v=technet.10)>), please report it to us as described below.
 
-This repository is part of an educational project (TFTEC Pós-Graduação Avançada de Cloud com Azure · Disciplina 06).
+## Reporting Security Issues
 
-If you find a security vulnerability:
+**Please do not report security vulnerabilities through public GitHub issues.**
 
-1. **Não abra um issue público** com detalhes do exploit
-2. Envie email pra **prof Guilherme Campos** (Coordenador da Disciplina) — disponível via TFTEC
-3. Inclua: tipo do problema, paths afetados, repro steps, impacto potencial
+Instead, please report them to the Microsoft Security Response Center (MSRC) at [https://msrc.microsoft.com/create-report](https://msrc.microsoft.com/create-report).
 
-Espere resposta em até 5 dias úteis.
+If you prefer to submit without logging in, send email to [secure@microsoft.com](mailto:secure@microsoft.com). If possible, encrypt your message with our PGP key; please download it from the [Microsoft Security Response Center PGP Key page](https://www.microsoft.com/msrc/pgp-key-msrc).
 
----
+You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Additional information can be found at [microsoft.com/msrc](https://www.microsoft.com/msrc).
 
-## Scope
+Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
 
-- Conteúdo educativo é fictício (Apex Group é uma empresa fictícia — holding varejista BR)
-- Snippets/configs Azure são exemplos pedagógicos — alunos devem ajustar pra produção real
-- 8 PDFs `sample-kb/` contêm dados sintéticos sem informação confidencial real
-- Nenhum credential, key ou secret deve ser commitado neste repo (verificado via `git secrets`-like no CI)
+- Type of issue (e.g. buffer overflow, SQL injection, cross-site scripting, etc.)
+- Full paths of source file(s) related to the manifestation of the issue
+- The location of the affected source code (tag/branch/commit or direct URL)
+- Any special configuration required to reproduce the issue
+- Step-by-step instructions to reproduce the issue
+- Proof-of-concept or exploit code (if possible)
+- Impact of the issue, including how an attacker might exploit the issue
 
----
+This information will help us triage your report more quickly.
 
-## Responsible Use
+If you are reporting for a bug bounty, more complete reports can contribute to a higher bounty award. Please visit our [Microsoft Bug Bounty Program](https://microsoft.com/msrc/bounty) page for more details about our active programs.
 
-Lab Azure pode gerar custos reais (~R$ 50/mês se deixado ligado). Sempre rode o capítulo `docs/10-cleanup.md` ao terminar a sessão.
+## Preferred Languages
 
-Recursos provisionados pelos alunos:
-- Storage Account (~R$ 0,01/mês)
-- Document Intelligence (free tier inicial)
-- AI Search Basic (~R$ 7/dia)
-- OpenAI deployments (~R$ 0,30/dia se idle)
-- Resource Group inteiro deletável via 1 click
+We prefer all communications to be in English.
 
----
+## Policy
 
-## Out of scope
+Microsoft follows the principle of [Coordinated Vulnerability Disclosure](https://www.microsoft.com/msrc/cvd).
 
-- Vulnerabilidades em dependências do template upstream Microsoft (`azure-search-openai-demo` que inspira o `apex-helpsphere`) — reportar diretamente ao [MSRC](https://msrc.microsoft.com/create-report)
-- Vulnerabilidades em Azure Services (Storage, Search, Doc Intelligence, OpenAI) — reportar ao Microsoft
-
----
-
-## Versioning
-
-Política de segurança versiona junto com `CHANGELOG.md`. Mudanças significativas (`MAJOR.MINOR`) são anunciadas em `CHANGELOG.md` e no commit message.
+<!-- END MICROSOFT SECURITY.MD BLOCK -->

@@ -1,92 +1,166 @@
-# Contributing — apex-rag-lab
+# Contributing
 
-> Convenções de contribuição pro Lab Intermediário D06.
->
-> `version-anchor: Q2-2026`
+This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
+the rights to use your contribution. For details, visit <https://cla.opensource.microsoft.com>.
 
----
+When you submit a pull request, a CLA bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
 
-## Convenção de commits (Conventional Commits)
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-Conventional Commits + referência a Decisões `#N` quando aplicável:
+- [Submitting a Pull Request (PR)](#submitting-a-pull-request-pr)
+- [Setting up the development environment](#setting-up-the-development-environment)
+- [Running unit tests](#running-unit-tests)
+- [Running E2E tests](#running-e2e-tests)
+- [Code style](#code-style)
+- [Adding new features](#adding-new-features)
+  - [Adding new azd environment variables](#adding-new-azd-environment-variables)
+  - [Adding new UI strings](#adding-new-ui-strings)
 
-| Prefixo | Quando usar |
-|---|---|
-| `feat:` | Nova funcionalidade (capítulo novo, snippet novo, screenshot novo) |
-| `fix:` | Correção de bug (typo, link quebrado, snippet inválido) |
-| `docs:` | Apenas docs (README, DECISION-LOG, CHANGES, PARA-O-ALUNO, CHANGELOG) |
-| `chore:` | Manutenção (deps, configs, CI) |
-| `refactor:` | Reorganizar sem alterar conteúdo (mover arquivo, renomear) |
-| `test:` | Adicionar/ajustar smoke tests |
+## Submitting a Pull Request (PR)
 
-### Exemplos
+Before you submit your Pull Request (PR) consider the following guidelines:
 
+- Search the repository (<https://github.com/[organization-name>]/[repository-name]/pulls) for an open or closed PR
+  that relates to your submission. You don't want to duplicate effort.
+- Make your changes in a new git fork
+- Follow [Code style conventions](#code-style)
+- [Run the tests](#running-unit-tests) (and write new ones, if needed)
+- Commit your changes using a descriptive commit message
+- Push your fork to GitHub
+- In GitHub, create a pull request to the `main` branch of the repository
+- Ask a maintainer to review your PR and address any comments they might have
+
+## Setting up the development environment
+
+Install the development dependencies:
+
+```shell
+python -m pip install -r requirements-dev.txt
 ```
-feat(docs): adicionar capítulo 03 (Storage Account)
-fix(snippets): corrigir skillset.json — campo defaultLanguageCode pt-Latn
-docs(decisions): cravar Decisão #2 (Doc Intelligence prebuilt-layout)
-chore(ci): adicionar workflow lint-docs.yml
-test(snippets): smoke validate JSON syntax
+
+Install the pre-commit hooks:
+
+```shell
+pre-commit install
 ```
 
-### Body do commit (opcional mas recomendado pra mudanças não-triviais)
+Compile the JavaScript:
 
-```
-feat(docs): adicionar capítulo 03 (Storage Account)
-
-- Resource Group: rg-apex-rag-lab-{aluno}
-- Storage tier: Standard LRS
-- Container: documents (private access)
-- Upload manual via Portal: arrastar 8 PDFs
-
-Refs: Decisão #3 (Storage tier), CHANGES.md v1.0.0
+```shell
+( cd ./app/frontend ; npm install ; npm run build )
 ```
 
----
+## Running unit tests
 
-## PR workflow
+Run the tests:
 
-1. **Forka** o repo: `tftec-guilherme/apex-rag-lab` → `SEU_USUARIO/apex-rag-lab`
-2. **Branch**: `feature/{escopo}` (ex: `feature/cap-03-storage`, `fix/snippet-skillset`)
-3. **Commit** + push pra seu fork
-4. **Abrir PR** pra `main` deste repo com:
-   - Título seguindo Conventional Commits
-   - Descrição com:
-     - O que mudou (resumo 2-3 linhas)
-     - Referência a Decisões/CHANGES quando aplicável
-     - Screenshots se mudou conteúdo visual
-     - Custo estimado se mudou steps de provisão
-5. **Aguardar review** (mínimo 1 reviewer + status checks verdes)
-6. **Squash and merge** preferido pra histórico linear
+```shell
+python -m pytest
+```
 
----
+If test snapshots need updating (and the changes are expected), you can update them by running:
 
-## Branch protection
+```shell
+python -m pytest --snapshot-update
+```
 
-`main` é protegida (configurado por @devops):
-- Required PR review (mínimo 1)
-- Required status checks: `lint-docs`, `snippets-test` (quando workflows existirem em v1.1.0)
-- No direct push to main
-- No force push to main
+Once tests are passing, generate a coverage report to make sure your changes are covered:
 
----
+```shell
+pytest --cov --cov-report=xml && \
+diff-cover coverage.xml --html-report coverage_report.html && \
+open coverage_report.html
+```
 
-## Anti-padrões editoriais (pra contribuições de conteúdo)
+## Running E2E tests
 
-Evite:
-- ❌ "É importante destacar que…"
-- ❌ "No mundo dinâmico do varejo de hoje…"
-- ❌ "Em última análise…"
-- ❌ Listas com 3+ bullets dizendo a mesma coisa
-- ❌ Marcas reais (Magalu, Americanas, Casas Bahia) — use sempre marcas Apex fictícias
-- ❌ Datas absolutas que envelhecem ("em janeiro de 2026...") — use `Q2-2026` ou "trimestre vigente"
-- ❌ Nomes de pessoas reais — use sempre personas v5 (Diego, Marina, Lia, Bruno, Carla)
-- ❌ Screenshots com dados pessoais ou IDs sensíveis (mask antes de commitar)
+Install Playwright browser dependencies:
 
----
+```shell
+playwright install --with-deps
+```
 
-## Suporte
+Run the tests:
 
-- **Issues:** https://github.com/tftec-guilherme/apex-rag-lab/issues
-- **Discussions:** abrir issue com label `discussion` se quiser tirar dúvida geral
-- **Prof Guilherme Campos** — disponível via TFTEC
+```shell
+python -m pytest tests/e2e.py --tracing=retain-on-failure
+```
+
+When a failure happens, the trace zip will be saved in the test-results folder.
+You can view that using the Playwright CLI:
+
+```shell
+playwright show-trace test-results/<trace-zip>
+```
+
+You can also use the online trace viewer at <https://trace.playwright.dev/>
+
+## Code style
+
+This codebase includes several languages: TypeScript, Python, Bicep, Powershell, and Bash.
+Code should follow the standard conventions of each language.
+
+For Python, you can enforce the conventions using `ruff` and `black`.
+
+Install the development dependencies:
+
+```shell
+python -m pip install -r requirements-dev.txt
+```
+
+Run `ruff` to lint a file:
+
+```shell
+python -m ruff <path-to-file>
+```
+
+Run `black` to format a file:
+
+```shell
+python -m black <path-to-file>
+```
+
+If you followed the steps above to install the pre-commit hooks, then you can just wait for those hooks to run `ruff` and `black` for you.
+
+## Adding new features
+
+We recommend using GitHub Copilot Agent mode when adding new features,
+as this project includes an [AGENTS.md](AGENTS.md) file
+that instructs Copilot (and other coding agents) about how to generate code for common code changes.
+
+If you are not using Copilot Agent mode, consult both that file and suggestions below.
+
+### Adding new azd environment variables
+
+When adding new azd environment variables, please remember to update:
+
+1. [main.parameters.json](./infra/main.parameters.json)
+1. [appEnvVariables in main.bicep](./infra/main.bicep)
+1. [ADO pipeline](.azdo/pipelines/azure-dev.yml).
+1. [Github workflows](.github/workflows/azure-dev.yml)
+
+### Adding new UI strings
+
+When adding new UI strings, please remember to update all translations.
+For any translations that you generate with an AI tool,
+please indicate in the PR description which language's strings were AI-generated.
+
+Here are community contributors that can review translations:
+
+| Language | Contributor         |
+|----------|---------------------|
+| Danish   | @EMjetrot           |
+| French   | @manekinekko        |
+| Japanese | @bnodir             |
+| Norwegian| @@jeannotdamoiseaux |
+| Portugese| @glaucia86          |
+| Spanish  | @miguelmsft         |
+| Turkish  | @mertcakdogan       |
+| Italian  | @ivanvaccarics      |
+| Dutch    |                     |
+| Polish   | @michuhu            |

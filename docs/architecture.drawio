@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="Claude Code" modified="2026-05-05" agent="AIOX · Claude Code" version="21.6.5" type="device">
+  <diagram name="HelpSphere Architecture" id="helpsphere-v2">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" toolTips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1400" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="g_edge" value="Edge · Internet" style="swimlane;whiteSpace=wrap;rounded=1;arcSize=4;glass=0;shadow=0;dashed=0;html=1;fillOpacity=40;strokeWidth=2;startSize=32;horizontal=1;fontSize=13;fontStyle=1;collapsible=0;fillColor=#F0F6FF;strokeColor=#0078D4;fontColor=#0078D4;" vertex="1" parent="1">
+          <mxGeometry x="170" y="30" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="g_pres" value="Apresentação" style="swimlane;whiteSpace=wrap;rounded=1;arcSize=4;glass=0;shadow=0;dashed=0;html=1;fillOpacity=40;strokeWidth=2;startSize=32;horizontal=1;fontSize=13;fontStyle=1;collapsible=0;fillColor=#E6F2FB;strokeColor=#0078D4;fontColor=#0078D4;" vertex="1" parent="1">
+          <mxGeometry x="170" y="170" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="g_compute" value="Container Apps Environment · westus3" style="swimlane;whiteSpace=wrap;rounded=1;arcSize=4;glass=0;shadow=0;dashed=0;html=1;fillOpacity=40;strokeWidth=2;startSize=32;horizontal=1;fontSize=13;fontStyle=1;collapsible=0;fillColor=#EAF6EA;strokeColor=#107C10;fontColor=#107C10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="520" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="g_ai" value="AI Platform · consumido pelo backend Python (RAG)" style="swimlane;whiteSpace=wrap;rounded=1;arcSize=4;glass=0;shadow=0;dashed=0;html=1;fillOpacity=40;strokeWidth=2;startSize=32;horizontal=1;fontSize=13;fontStyle=1;collapsible=0;fillColor=#F3E8FF;strokeColor=#5C2D91;fontColor=#5C2D91;" vertex="1" parent="1">
+          <mxGeometry x="620" y="320" width="600" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="g_ident" value="Identity · least privilege REAL" style="swimlane;whiteSpace=wrap;rounded=1;arcSize=4;glass=0;shadow=0;dashed=0;html=1;fillOpacity=40;strokeWidth=2;startSize=32;horizontal=1;fontSize=13;fontStyle=1;collapsible=0;fillColor=#FFF7DB;strokeColor=#CA5010;fontColor=#CA5010;" vertex="1" parent="1">
+          <mxGeometry x="40" y="560" width="520" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="g_ops" value="Observability &amp; DevOps" style="swimlane;whiteSpace=wrap;rounded=1;arcSize=4;glass=0;shadow=0;dashed=0;html=1;fillOpacity=40;strokeWidth=2;startSize=32;horizontal=1;fontSize=13;fontStyle=1;collapsible=0;fillColor=#FFF1DB;strokeColor=#605E5C;fontColor=#605E5C;" vertex="1" parent="1">
+          <mxGeometry x="620" y="560" width="600" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="g_data" value="Persistence" style="swimlane;whiteSpace=wrap;rounded=1;arcSize=4;glass=0;shadow=0;dashed=0;html=1;fillOpacity=40;strokeWidth=2;startSize=32;horizontal=1;fontSize=13;fontStyle=1;collapsible=0;fillColor=#FDEAE7;strokeColor=#D13438;fontColor=#D13438;" vertex="1" parent="1">
+          <mxGeometry x="40" y="760" width="520" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="r_users" value="[1] Atendentes Apex&#xa;(5 marcas)" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/identity/Users.svg;" vertex="1" parent="g_edge">
+          <mxGeometry x="125" y="40" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_spa" value="[2] SPA React + Vite" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/app_services/App_Services.svg;" vertex="1" parent="g_pres">
+          <mxGeometry x="125" y="40" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_backend" value="[3] Backend Python&#xa;(RAG)" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/containers/Container_Apps.svg;" vertex="1" parent="g_compute">
+          <mxGeometry x="80" y="70" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_tickets" value="[4] Tickets-service&#xa;.NET 10" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/containers/Container_Apps.svg;" vertex="1" parent="g_compute">
+          <mxGeometry x="360" y="70" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_openai" value="[9] Azure OpenAI" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/ai_machine_learning/Azure_OpenAI.svg;" vertex="1" parent="g_ai">
+          <mxGeometry x="40" y="70" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_search" value="[10] AI Search" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/app_services/Search_Services.svg;" vertex="1" parent="g_ai">
+          <mxGeometry x="180" y="70" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_docint" value="[11] Document&#xa;Intelligence" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/ai_machine_learning/Form_Recognizers.svg;" vertex="1" parent="g_ai">
+          <mxGeometry x="330" y="70" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vision" value="[12] AI Vision" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/ai_machine_learning/Computer_Vision.svg;" vertex="1" parent="g_ai">
+          <mxGeometry x="490" y="70" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_mi_be" value="[5] UMI backend" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/identity/Managed_Identities.svg;" vertex="1" parent="g_ident">
+          <mxGeometry x="80" y="52" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_mi_tix" value="[6] UMI tickets" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/identity/Managed_Identities.svg;" vertex="1" parent="g_ident">
+          <mxGeometry x="360" y="52" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_insights" value="[13] Application&#xa;Insights" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/devops/Application_Insights.svg;" vertex="1" parent="g_ops">
+          <mxGeometry x="50" y="52" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_acr" value="[14] Container&#xa;Registry" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/containers/Container_Registries.svg;" vertex="1" parent="g_ops">
+          <mxGeometry x="240" y="52" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_ci" value="[15] GitHub Actions&#xa;(azd CI/CD)" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/devops/Azure_DevOps.svg;" vertex="1" parent="g_ops">
+          <mxGeometry x="440" y="52" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_blob" value="[8] Blob Storage" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/storage/Storage_Accounts.svg;" vertex="1" parent="g_data">
+          <mxGeometry x="80" y="52" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r_sql" value="[7] Azure SQL&#xa;Serverless" style="image;whiteSpace=wrap;rounded=0;dashed=0;html=1;points=[];align=center;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;image=img/lib/azure2/databases/Azure_SQL.svg;" vertex="1" parent="g_data">
+          <mxGeometry x="360" y="52" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="HTTPS · Entra ID JWT" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#0078D4;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="r_users" target="r_spa">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="VITE_API_BACKEND_URL" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.3;exitY=1;entryX=0.5;entryY=0;strokeColor=#0078D4;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="r_spa" target="r_backend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="VITE_API_TICKETS_URL" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.7;exitY=1;entryX=0.5;entryY=0;strokeColor=#0078D4;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="r_spa" target="r_tickets">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="410 Gone (RFC 8288)" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;dashed=1;dashPattern=8 4;strokeColor=#D13438;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="r_backend" target="r_tickets">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="MI auth" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;dashed=1;dashPattern=3 3;strokeColor=#CA5010;strokeWidth=1.5;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_backend" target="r_mi_be">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="MI auth" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;dashed=1;dashPattern=3 3;strokeColor=#CA5010;strokeWidth=1.5;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_tickets" target="r_mi_tix">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="CONNECT + SELECT tbl_tenants" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.2;entryY=0;strokeColor=#107C10;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="r_mi_be" target="r_sql">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="9 grants object-level" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.8;entryY=0;strokeColor=#107C10;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="r_mi_tix" target="r_sql">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="RAG (chat/ask)" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=1;exitY=0.3;entryX=0;entryY=0.5;dashed=1;dashPattern=8 4;strokeColor=#5C2D91;strokeWidth=1.5;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_backend" target="r_openai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="index query" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;entryX=0;entryY=0.5;dashed=1;dashPattern=8 4;strokeColor=#5C2D91;strokeWidth=1.5;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_backend" target="r_search">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="OCR/layout" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;dashed=1;dashPattern=8 4;strokeColor=#5C2D91;strokeWidth=1.5;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_backend" target="r_docint">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="vision OCR" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=1;exitY=0.6;entryX=0;entryY=0.5;dashed=1;dashPattern=8 4;strokeColor=#5C2D91;strokeWidth=1.5;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_backend" target="r_vision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="docs upload" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0;exitY=0.8;entryX=0.5;entryY=0;dashed=1;dashPattern=8 4;strokeColor=#5C2D91;strokeWidth=1.5;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_backend" target="r_blob">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="OpenTelemetry" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=1;exitY=0.8;entryX=0;entryY=0.3;dashed=1;dashPattern=3 3;strokeColor=#605E5C;strokeWidth=1;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_backend" target="r_insights">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="OpenTelemetry" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=1;exitY=0.8;entryX=0;entryY=0.7;dashed=1;dashPattern=3 3;strokeColor=#605E5C;strokeWidth=1;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_tickets" target="r_insights">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="azd up · push images" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;entryX=1;entryY=0.5;dashed=1;dashPattern=3 3;strokeColor=#605E5C;strokeWidth=1;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_ci" target="r_acr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="image pull" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.3;exitY=0;entryX=1;entryY=0.3;dashed=1;dashPattern=3 3;strokeColor=#605E5C;strokeWidth=1;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_acr" target="r_backend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="image pull" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=1;html=1;fontSize=9;labelBackgroundColor=#ffffff;exitX=0.7;exitY=0;entryX=1;entryY=0.7;dashed=1;dashPattern=3 3;strokeColor=#605E5C;strokeWidth=1;endArrow=blockThin;endFill=0;" edge="1" parent="1" source="r_acr" target="r_tickets">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_title" value="HelpSphere · Apex Group · Decisões #5 #16 #17 #18 · Disciplina 06" style="text;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1;fontColor=#ffffff;align=center;verticalAlign=middle;rounded=1;fillColor=#0078D4;strokeColor=#005a9e;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="960" width="1180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_conn" value="&lt;table style=&apos;width:100%;border-collapse:collapse;font-size:12px;&apos;&gt;&lt;tr&gt;&lt;td style=&apos;padding:6px 15px;&apos;&gt;&lt;b style=&apos;color:#0078D4;&apos;&gt;━━&lt;/b&gt; Fluxo de requisição&lt;/td&gt;&lt;td style=&apos;padding:6px 15px;&apos;&gt;&lt;b style=&apos;color:#107C10;&apos;&gt;━━&lt;/b&gt; Grants SQL (dados)&lt;/td&gt;&lt;td style=&apos;padding:6px 15px;&apos;&gt;&lt;b style=&apos;color:#D13438;&apos;&gt;- - -&lt;/b&gt; 410 Gone (RFC 8288)&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&apos;padding:6px 15px;&apos;&gt;&lt;b style=&apos;color:#5C2D91;&apos;&gt;- - -&lt;/b&gt; Consumo AI (RAG)&lt;/td&gt;&lt;td style=&apos;padding:6px 15px;&apos;&gt;&lt;b style=&apos;color:#CA5010;&apos;&gt;· · ·&lt;/b&gt; Autenticação MI&lt;/td&gt;&lt;td style=&apos;padding:6px 15px;&apos;&gt;&lt;b style=&apos;color:#605E5C;&apos;&gt;· · ·&lt;/b&gt; Observability / DevOps&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;whiteSpace=wrap;html=1;rounded=1;fillColor=#F0F6FF;strokeColor=#0078D4;strokeWidth=1;align=left;verticalAlign=middle;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="40" y="995" width="1180" height="55" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

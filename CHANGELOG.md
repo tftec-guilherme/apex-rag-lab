@@ -1,107 +1,110 @@
-# Changelog — apex-rag-lab
+# Changelog — HelpSphere Template
 
-All notable changes to this project are documented in this file.
+All notable changes to this template are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **Note:** Architectural decisions are catalogued separately in [`DECISION-LOG.md`](./DECISION-LOG.md). Diff vs guia v5 original is in [`CHANGES.md`](./CHANGES.md). Pedagogical surprises are in [`PARA-O-ALUNO.md`](./PARA-O-ALUNO.md).
+> **Note:** Architectural decisions are catalogued separately in [`DECISION-LOG.md`](./DECISION-LOG.md). Pedagogical surprises are catalogued in [`PARA-O-ALUNO.md`](./PARA-O-ALUNO.md).
 
 ---
 
-## [v0.2.0] — 2026-05-09 ★ Wave 4 restored
+## [v2.1.0] — 2026-05-05
 
-### Reverted
+### Sessões 9.4-9.5 — Setup Zero-Friction Production-Grade
 
-- **Deprecation 2026-05-08** revertida. Repo restaurado como **companion público ATIVO** do Lab Intermediário D06. Causa raiz: alunos não têm acesso ao monorepo privado `azure-retail` (memory: `feedback_aluno_nunca_acessa_azure_retail.md`). Padrão "3 Labs = 3 companions públicos" restaurado.
+Primeiro release com fluxo `azd up` end-to-end FUNCIONAL pra aluno (login real no browser + tickets carregando + dashboard executivo). Resolve **11 surpresas pedagógicas novas** descobertas no primeiro teste E2E real.
 
 ### Added
 
-- **`docs/00-guia-completo.md`** — guia integral Wave 4 (~2074 linhas, cópia ativa do canônico no monorepo)
-- **`docs/parte-01.md` → `docs/parte-09.md`** — 9 thin wrappers para navegação parte-a-parte
-- **`docs/troubleshooting.md`** — erros catalogados Wave 4 (Python imperativo + Function App + 4 services AI)
-- **`snippets/{index_pdfs,create_search_index,index_to_search,function_app,eval_rag}.py`** + **`requirements.txt`** + **`test_*.sh`** + **`test_chat_rag.http`** — copy-paste extraídos do guia
-- **`sample-kb/README.md`** — instruções Print-to-PDF dos 3 PDFs públicos Microsoft Learn (~3MB)
-- **`archive/`** — preservação histórica de v0.1.0-init (10 capítulos pre-Wave 4 + 5 snippets JSON Skillset + CONTEXT.md editorial 8 PDFs proprietários) com `archive/README.md` explicando o contexto
-- **DECISION-LOG #6, #7, #8, #9** — Reversão deprecation, Skillset → Python imperativo, 3 PDFs públicos, AI Search Standard S1
+- **`<LoginGate>` componente** — tela de login bloqueante com call-to-action explícito antes de qualquer rota; substitui falha silenciosa do botão login no topbar
+- **`BrandMark` SVG** — logomark "esfera concêntrica" production-grade (navy + accent gold)
+- **Dashboard executivo `/`** — 4 KPI cards + 2 charts Recharts (Volume por categoria, Volume 7 dias) consumindo novo endpoint `/api/tickets/stats` (.NET tickets-service)
+- **Apex Executivo design system** — paleta refinada (off-white #fafaf7, navy #0c1834, accent gold #a87b3f), tipografia editorial (Fraunces display + Inter Tight body + JetBrains Mono code)
+- **Shell layout** — sidebar 240px com nav sections (Operação/Inteligência) + topbar contextual com kicker accent + h1 + subtitle dinâmico por rota
+- **Tickets list redesign** — TicketRow grid 7-cols, filtros sticky pills + selects + search, EmptyState com InboxIcon, paginação numérica
+- **TicketDetail redesign** — layout 2-col, sidebar SLA countdown live, CommentTimeline vertical, status switcher pills
+- **Endpoint `/api/tickets/stats`** — agregações com Dapper QueryMultipleAsync (5 selects single round-trip), `WHERE tenant_id` em todas (RLS-like)
+- **Bicep params parametrizados** — `pythonVersion`, `additionalCorsOrigins`, `skipPrepdocs`, `enableChat`, `tokenAudienceFormat`, `sqlAutoPauseDelay`
+- **`scripts/preflight.{ps1,sh}`** — pré-validação de 8 pré-condições (~30s)
+- **`scripts/setup_search_index.{py,ps1,sh}`** — cria `gptkbindex` idempotentemente no postprovision (antes de `prepdocs`)
+- **`scripts/run_prepdocs.{ps1,sh}`** — wrapper honrando `SKIP_PREPDOCS=true`
+- **`.github/workflows/setup-aad.yml`** — workflow standalone `workflow_dispatch` para recriar AAD apps
+- **`.python-version`** (3.13)
 
 ### Changed
 
-- **`README.md`** — remove banner DEPRECATED, status `ATIVO Wave 4`, arquitetura atualizada (4 services AI + Function App), estrutura de pastas atualizada, custo R$ 21-29
-- **`PARA-O-ALUNO.md`** — Quick Start em 6 passos, 7 surpresas pedagógicas catalogadas, regra de ouro `az group delete`, links companion publishers
-- **`DECISION-LOG.md` #1** — status atualizado para `Cravada → DEPRECATED 2026-05-08 → Restaurada 2026-05-09`
-- **`CHANGES.md`** — v0.2.0 entry com diff completo vs v0.1.0-init e política de sync com monorepo
+- **`auth_init.py`** rewrite (716 linhas): two-app pattern (Server + Client), Microsoft Graph perms automatizadas, Directory Extension `app_tenant_id`, Optional Claim, `accessTokenAcceptedVersion=2`, admin consent automático para Graph + Server scopes
+- **`auth_update.py`** rewrite (165 linhas): atualiza redirect URIs com FQDN do env, seta valor extension no user atual (Apex Mercado tenant default `11111111-...`)
+- **`SqlConnectionFactory.cs`** refactor: token explicit injection via `Azure.Identity` (paridade Decisão #17 Python). Bypassa SqlClient auth provider system.
+- **`TenantContext.cs` (.NET) + `_resolve_tenant_id` (Python)**: aceitam as 3 formas de claim (`app_tenant_id`, `extn.app_tenant_id`, `extension_<id>_app_tenant_id`)
+- **Backend `/auth_setup`**: expõe `ticketsApiBase` (runtime config) + `enableChat` (lido de env)
+- **Backend `/redirect`**: serve `index.html` (não blank) — necessário para `loginRedirect` flow
+- **Frontend MSAL**: `loginPopup` → `loginRedirect` + `handleRedirectPromise()` no boot + `prompt: select_account`
+- **Bicep `tickets-service`**: `AzureAd__Audience=serverAppId` (GUID puro v2), `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false`, CORS allowedOrigins via `union(legacy, [backendFqdn], additionalCorsOrigins)`
+- **Bicep backend**: `pythonVersion` ligado a param (era hardcoded 3.11)
+- **Bicep SQL**: `autoPauseDelay` ligado a param `sqlAutoPauseDelay`
+- **Dockerfile tickets-service**: `apk add icu-libs icu-data-full` + `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false`
+- **`azure.yaml` postprovision**: `setup_search_index` rodando ANTES de `prepdocs`, `prepdocs` virou wrapper `run_prepdocs` honrando `SKIP_PREPDOCS`
+- **`Microsoft.Data.SqlClient.Extensions.Azure`**: removido (frágil); substituído por `Azure.Identity 1.13.1`
 
-### Removed (moved to `archive/`)
+### Removed
 
-- 10 capítulos pre-Wave 4 (`docs/01-pre-requisitos.md` → `docs/10-cleanup.md` + `troubleshooting.md`)
-- 5 snippets JSON Cognitive Search (`snippets/data-source.json`, `indexer.json`, `index-schema.json`, `skillset.json`, `query-rag-sample.http`)
-- Curadoria editorial 8 PDFs proprietários (`sample-kb/CONTEXT.md` 200 linhas + `sample-kb/source/01-faq_horario_atendimento.outline.md`)
+- Build-time injection `VITE_API_TICKETS_URL` no `azure.yaml` prebuild hook (substituído por runtime config)
+- Chat link da nav lateral (rota mantida; ativada via Bicep `enableChat=true` no Lab Intermediário)
+- `console.log` silencioso no `LoginButton.catch` (substituído por `loginRedirect` + `handleRedirectPromise` no boot)
 
-### Architecture migration
+### Fixed
 
-- **Pipeline RAG:** Cognitive Search Skillset declarativo → Python imperativo + Function App `/chat/rag`
-- **Sample-KB:** 8 PDFs proprietários pt-BR (~25MB) → 3 PDFs públicos Microsoft Learn (~3MB)
-- **AI Search tier:** Basic → **Standard S1** (vector hybrid)
-- **Capítulos:** 10 sequenciais → 9 partes (adicionou AI Vision OCR + AI Translator)
-- **Tempo estimado:** 90-120min → **8h** (escopo aumentou com 4 services AI integrados)
-- **Modelos OpenAI:** `gpt-4o-mini` + `ada-002` → `gpt-4.1-mini` + `text-embedding-3-large` (3072 dim)
+- **AADSTS90009** (single-app self-token): two-app pattern obrigatório implementado
+- **AADSTS650056** (Microsoft Graph perms missing): Client App declara perms + admin consent automático
+- **IDX10214** (audience validation failed): Bicep usa GUID puro v2
+- **`Globalization Invariant Mode is not supported`**: Alpine .NET com `icu-libs`
+- **`Cannot find an authentication provider for 'ActiveDirectoryManagedIdentity'`**: token explicit injection
+- **HTTP 410 Gone em `/api/tickets`**: runtime config `ticketsApiBase` no `/auth_setup`
+- **Login silenciosamente quebrado em incognito**: `loginRedirect` + `LoginGate` componente bloqueante
+- **`/redirect` blank em redirect flow**: rota agora serve `index.html`
+- **Token MSAL cached entre contas**: `prompt: select_account` força seletor sempre
+- **Backend Python crashloop sem `gptkbindex`**: `setup_search_index.py` no postprovision
+
+### Documentation
+
+- `PARA-O-ALUNO.md`: 11 surpresas novas (#19-#29) + Quick Start passo 0 (preflight) + nota chat dormente + nota `Application.ReadWrite.All` para CI
+- `DECISION-LOG.md`: 5 decisões novas (#19-#23)
+- `docs/plans/v2.1.0-execution.md`: plano de execução multiagent (4 ondas, 11 subagents, ~6h wall-clock vs ~16-21h sequencial)
+- Diagrama `docs/architecture.{drawio,png}` reescrito (Sessão 9.3, commit `269bac7`)
 
 ### Pedagogical impact
 
-- ✅ Companion público restaurado — aluno tem caminho único de clone para reproduzir lab inteiro
-- ✅ Padrão 3 Labs = 3 companions públicos restaurado (Inter + Final + Avançado simétricos)
-- ✅ Source of truth canônica no monorepo `azure-retail` com sync downstream automático
-
-### Cross-references
-
-- Memory feedback: `feedback_aluno_nunca_acessa_azure_retail.md`
-- Source of truth: `azure-retail/Disciplina_06_*/01_Aulas/Lab_Intermediario_RAG_HelpSphere_Guia_Portal.md`
-- Sister labs: [`apex-helpsphere-agente-lab`](https://github.com/tftec-guilherme/apex-helpsphere-agente-lab) · [`apex-helpsphere-prod-lab`](https://github.com/tftec-guilherme/apex-helpsphere-prod-lab)
+- **29 surpresas catalogadas** (era 18 na v2.0.0) — todas com fix permanente automatizado
+- **0 passos manuais no portal Azure** (era ~6 com criação de app reg + admin consent + extension property)
+- **Setup zero-friction**: pre-flight (~30s) → fork → secrets → `git push` ou `azd up` local → app rodando em <15min
 
 ---
 
-## [v0.1.0-init] — 2026-05-06
+## [v2.0.0] — 2026-05-04
 
-### Bootstrap
+### Sessão 9.2 — Backend Python Crashloop RESOLVIDO
 
-Skeleton inicial criado por @devops conforme Story 06.7 v2.0 do Epic Pendências v5 D06 (course-correction master cravado pelo prof 2026-05-05 noite). Conteúdo (8 PDFs sample-kb + 10 capítulos passo-a-passo + snippets + screenshots) será adicionado em sessões dedicadas.
+Primeiro release SHIP-READY do template. Epic 06.5c B-PRACTICAL fechado com qa-gate PASS (10/12 ACs validados, 2 manual deferred). CI 100% verde.
 
 ### Added
 
-- **`README.md`** — production-grade mirror do padrão `apex-helpsphere`, descreve objetivo pedagógico, caminhos de execução (Portal step-by-step vs Bicep automation), arquitetura high-level, custo estimado (<R$ 10), pré-requisitos, política de revisão anual
-- **`DECISION-LOG.md`** — Decisão #1 (repo público dedicado dual-repo) cravada com contexto + alternativas + anti-padrões + impacto pedagógico + cross-link a memory feedbacks · 7 decisões TODO mapeadas
-- **`CHANGES.md`** — diff vs guia v5 original (`Lab_Intermediario_RAG_HelpSphere_Guia_Portal.md`) + roadmap de versões (v0.2 sample-kb → v0.3 Bicep → v1.0 capítulos → v1.1 CI → v1.2 sub-task transversal apex-helpsphere)
-- **`PARA-O-ALUNO.md`** — entrypoint pedagógico com tom enterprise mirror `apex-helpsphere`
-- **`CHANGELOG.md`** — este arquivo
-- **`SECURITY.md`** — política de segurança educacional (não Microsoft boilerplate — adaptada pra contexto TFTEC)
-- **`CONTRIBUTING.md`** — convenções de commits + PR workflow + branch protection
-- **`.gitignore`** + **`.gitattributes`**
-- **Estrutura de pastas:** `docs/`, `sample-kb/`, `snippets/`, `images/` (todas com `.gitkeep`)
-- **`LICENSE` MIT** (gerado por `gh repo create`)
+- Hybrid Microservices Python + .NET (Epic 06.5c)
+- `.github/workflows/dotnet-test.yaml` para build + test do tickets-service .NET 10
+- `scripts/e2e-smoke-epic-06.5c.sh` smoke E2E reproduzível
+- README enterprise (Apex Group focus) + diagrama arquitetural
+- `PARA-O-ALUNO.md` com 18 surpresas pedagógicas catalogadas
+- `DECISION-LOG.md` com 18 decisões cravadas
 
-### Configured (via @devops Gage)
+### Changed
 
-- Repo público em `tftec-guilherme/apex-rag-lab`
-- License: MIT
-- Default branch: `main`
-- Topics: `azure`, `rag`, `azure-search`, `document-intelligence`, `portuguese`, `tutorial`, `tftec`, `apex`
-- Description: "Lab Intermediário D06 — RAG production-grade passo-a-passo Portal Azure (HelpSphere companion · Q2-2026)"
+- `app/backend/repositories/_pool.py` — token AAD explícito via `azure.identity.ManagedIdentityCredential` + injeção via `SQL_COPT_SS_ACCESS_TOKEN` (Decisão #17)
+- `infra/main.bicep` — `autoPauseDelay: 60 → -1` (Decisão #18)
+- 9 grants object-level scoped exclusivamente para tickets MI
 
-### Pedagogical impact
+### Fixed
 
-- **0% conteúdo do lab pronto** — esperado nesta versão (bootstrap)
-- Anti-drift garantido pelo design dual-repo (Bicep no `azure-retail`, Portal aqui)
-- Aluno tem caminho claro pra contribuir issues/PRs quando v1.0.0 sair
-- Skeletons enterprise (5 docs) servem de boilerplate pra futuras stories de Lab Final + Lab Avançado
-
-### Cross-references
-
-- Story 06.7 v2.0: `azure-retail/docs/stories/06.7.assets-complementares-labs.md`
-- Epic Pendências v5 v3.1: `azure-retail/docs/stories/epics/epic-disciplina-06-pendencias/epic.md` linha 124
-- Memory recovery session: `~/.claude/.../memory/session-2026-05-06-recovery-course-correction-06.7.md`
-- Pattern arquitetural: `feedback_bicep_validates_portal_mirrors.md`
-- Filosofia macro: `feedback_dont_reinvent_d06_labs_ready.md`
+- Backend Python crashloop com `pyodbc HYT00 Login timeout` em User-Assigned MI Linux Container Apps
+- Cold-start de Serverless paused (~30-60s) durante demos
 
 ---
-
-`version-anchor: Q2-2026`

@@ -1,0 +1,171 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+# HelpSphere — Apex Retail | Disciplina 06 (Story 06.5a)
+# Forked from Azure-Samples/azure-search-openai-demo @ SHA 95ce0c9... (ver helpsphere/DECISION-LOG.md)
+name: helpsphere-template
+metadata:
+  template: azure-search-openai-demo@0.0.3
+requiredVersions:
+  azd: ">= 1.23.6"
+services:
+  # HelpSphere — Story 06.5c.3 (B-PRACTICAL): tickets-service hybrid microservice
+  # .NET 10 Minimal API — entrega Story 06.5c.2 (5 endpoints REST + JWT/tenant_id).
+  # Image build via remoteBuild (azd → ACR Tasks → Dockerfile multi-stage alpine).
+  # ACA app provisionado pelo Bicep (módulo acaTickets em main.bicep).
+  # language=docker (não dotnet) porque .csproj está em src/TicketsService.Api/
+  # (estrutura solution multi-projeto), mas Dockerfile fica no root da solution
+  # com COPY paths relativos esperando context=app/tickets-service/.
+  # azd com language=docker pula detecção .csproj e usa Dockerfile direto.
+  tickets-service:
+    project: ./app/tickets-service
+    language: docker
+    host: containerapp
+    docker:
+      remoteBuild: true
+  backend:
+    project: ./app/backend
+    language: py
+    # Please check docs/azure_container_apps.md for more information on how to deploy to Azure Container Apps
+    host: containerapp
+    docker:
+      remoteBuild: true
+    # Please check docs/azure_app_service.md for more information on how to deploy to Azure App Service
+    # host: appservice
+    hooks:
+      # This hook is called when App Service is the host
+      prepackage:
+        windows:
+          shell: pwsh
+          run:  cd ../frontend;npm install;npm run build
+          interactive: false
+          continueOnError: false
+        posix:
+          shell: sh
+          run:  cd ../frontend;npm install;npm run build
+          interactive: false
+          continueOnError: false
+      # This hook is called when Azure Container Apps is the host.
+      # Decisão #19 (runtime config): a URL do tickets-service é exposta pelo backend
+      # via `/auth_setup.ticketsApiBase` (lendo env `TICKETS_BACKEND_URI`), então o build
+      # do frontend é environment-agnóstico — o mesmo bundle serve dev/staging/prod.
+      # Removida a injeção build-time de `VITE_API_TICKETS_URL` (eliminava pegadinha
+      # "tickets retornam 410 Gone" quando aluno esquecia de exportar a env antes do build).
+      prebuild:
+        windows:
+          shell: pwsh
+          run: |
+            cd ../frontend
+            npm install
+            npm run build
+          interactive: false
+          continueOnError: false
+        posix:
+          shell: sh
+          run: |
+            cd ../frontend
+            npm install
+            npm run build
+          interactive: false
+          continueOnError: false
+  document-extractor:
+    project: ./app/functions/document_extractor
+    language: py
+    host: function
+    condition: ${USE_CLOUD_INGESTION}
+    hooks:
+      prepackage:
+        windows:
+          shell: pwsh
+          run: ../../../scripts/copy_prepdocslib.ps1
+          interactive: false
+          continueOnError: false
+        posix:
+          shell: sh
+          run: ../../../scripts/copy_prepdocslib.sh
+          interactive: false
+          continueOnError: false
+  figure-processor:
+    project: ./app/functions/figure_processor
+    language: py
+    host: function
+    condition: ${USE_CLOUD_INGESTION}
+    hooks:
+      prepackage:
+        windows:
+          shell: pwsh
+          run: ../../../scripts/copy_prepdocslib.ps1
+          interactive: false
+          continueOnError: false
+        posix:
+          shell: sh
+          run: ../../../scripts/copy_prepdocslib.sh
+          interactive: false
+          continueOnError: false
+  text-processor:
+    project: ./app/functions/text_processor
+    language: py
+    host: function
+    condition: ${USE_CLOUD_INGESTION}
+    hooks:
+      prepackage:
+        windows:
+          shell: pwsh
+          run: ../../../scripts/copy_prepdocslib.ps1
+          interactive: false
+          continueOnError: false
+        posix:
+          shell: sh
+          run: ../../../scripts/copy_prepdocslib.sh
+          interactive: false
+          continueOnError: false
+hooks:
+    preprovision:
+      windows:
+        shell: pwsh
+        run: ./scripts/auth_init.ps1
+        interactive: true
+        continueOnError: false
+      posix:
+        shell: sh
+        run: ./scripts/auth_init.sh
+        interactive: true
+        continueOnError: false
+    postprovision:
+      # HelpSphere — Story 06.5a Sessão 2.3 adiciona sql_init.{ps1,sh} ao final
+      # do hook postprovision (após auth_update + prepdocs do template upstream).
+      # sql_init.* cria USER FROM EXTERNAL PROVIDER para a backend MI, concede
+      # db_datareader + db_datawriter, executa migrations e (opcionalmente) seeds.
+      #
+      # HelpSphere — Story 06.5c.9 Sessão 9.5 (Decisão #21) adiciona
+      # setup_search_index.{ps1,sh} ANTES de prepdocs. Cria gptkbindex (schema
+      # mínimo: id/content/sourcepage/oids/groups) idempotentemente — garante
+      # que backend Python suba mesmo se prepdocs.py falhar/skipar (template
+      # vem sem PDFs em ./data/, então prepdocs sai cedo). prepdocs sobrescreve
+      # com schema completo quando aluno popular ./data/ no Lab Intermediário.
+      #
+      # HelpSphere v2.1.0 (Sessão 9.5, Decisão #22) — `prepdocs.{ps1,sh}` foi
+      # encapsulado em `run_prepdocs.{ps1,sh}` que respeita o param Bicep
+      # `skipPrepdocs` (env var SKIP_PREPDOCS). prepdocs original NÃO foi
+      # modificado para preservar facilidade de merge upstream com
+      # Azure-Samples/azure-search-openai-demo.
+      windows:
+        shell: pwsh
+        run: ./scripts/auth_update.ps1;./scripts/setup_search_index.ps1;./scripts/run_prepdocs.ps1;./scripts/sql_init.ps1
+        interactive: true
+        continueOnError: false
+      posix:
+        shell: sh
+        run: ./scripts/auth_update.sh;./scripts/setup_search_index.sh;./scripts/run_prepdocs.sh;./scripts/sql_init.sh
+        interactive: true
+        continueOnError: false
+    postdeploy:
+      windows:
+        shell: pwsh
+        run: ./scripts/setup_cloud_ingestion.ps1
+        interactive: true
+        continueOnError: false
+      posix:
+        shell: sh
+        run: ./scripts/setup_cloud_ingestion.sh
+        interactive: true
+        continueOnError: false

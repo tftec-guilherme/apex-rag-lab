@@ -1,0 +1,378 @@
+/* TicketDetail — Wave 3.I "Apex Executivo" */
+.page {
+    width: 100%;
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-5) var(--space-7);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    width: fit-content;
+    padding: var(--space-1) var(--space-2);
+    margin-left: calc(var(--space-2) * -1);
+    border-radius: var(--radius-sm);
+    transition:
+        color var(--t-fast),
+        background var(--t-fast);
+}
+
+.backLink:hover {
+    color: var(--color-accent);
+    background: var(--color-accent-soft);
+}
+
+.errorBar {
+    border-radius: var(--radius);
+}
+
+/* Layout 2-colunas: main + sidebar sticky */
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: var(--space-6);
+    align-items: start;
+}
+
+.main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.sidebar {
+    position: sticky;
+    top: calc(var(--topbar-h) + var(--space-4));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+/* Header (id + priority + status pill) */
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.headerMeta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.id {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--color-text-muted);
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.priority {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    line-height: 1.4;
+}
+
+.pri-critical {
+    color: var(--priority-critical);
+    background: var(--color-danger-soft);
+    border-color: rgba(207, 34, 46, 0.22);
+}
+
+.pri-high {
+    color: var(--priority-high);
+    background: var(--color-danger-soft);
+    border-color: rgba(209, 36, 47, 0.18);
+}
+
+.pri-medium {
+    color: var(--priority-medium);
+    background: var(--color-warn-soft);
+    border-color: rgba(154, 103, 0, 0.22);
+}
+
+.pri-low {
+    color: var(--priority-low);
+    background: rgba(110, 119, 129, 0.12);
+    border-color: rgba(110, 119, 129, 0.2);
+}
+
+/* Subject + description */
+.subject {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-3xl);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-tight);
+    color: var(--color-text);
+    letter-spacing: -0.015em;
+}
+
+.description {
+    margin: 0;
+    max-width: 65ch;
+    color: var(--color-text-muted);
+    font-size: var(--fs-base);
+    line-height: var(--lh-loose);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Section titles */
+.sectionTitle {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-semibold);
+    color: var(--color-text);
+    letter-spacing: -0.005em;
+}
+
+/* Status action buttons */
+.statusActions {
+    padding: var(--space-4) 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.statusButtons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.statusBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+    transition:
+        background var(--t-fast),
+        border-color var(--t-fast),
+        color var(--t-fast);
+}
+
+.statusBtn:hover:not(:disabled) {
+    background: var(--color-accent-soft);
+    border-color: var(--color-accent);
+    color: var(--color-accent-hover);
+}
+
+.statusBtnActive,
+.statusBtnActive:hover:not(:disabled) {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #ffffff;
+    cursor: default;
+}
+
+.statusBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btnSpinner {
+    --colorBrandStroke1: var(--color-accent);
+}
+
+/* Comments section */
+.commentsSection {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.commentNotice {
+    border-radius: var(--radius);
+}
+
+/* Sidebar cards */
+.card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.cardTitle {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-subtle);
+}
+
+.dl {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+    gap: var(--space-2) var(--space-4);
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+.dl dt {
+    color: var(--color-text-subtle);
+    font-weight: var(--fw-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: var(--fs-xs);
+    align-self: center;
+}
+
+.dl dd {
+    margin: 0;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.tenantValue {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+}
+
+.muted {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.attachmentsList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.attachment {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    word-break: break-all;
+}
+
+.confidence {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.confidenceTrack {
+    flex: 1;
+    height: 6px;
+    background: var(--color-border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+
+.confidenceFill {
+    height: 100%;
+    background: var(--color-success);
+    transition: width var(--t-base);
+}
+
+.confidenceValue {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 2.5rem;
+    text-align: right;
+}
+
+.suggestButton {
+    width: 100%;
+    justify-content: center;
+}
+
+.suggestResult {
+    margin-top: var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+/* Skeleton */
+.skeletonWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+.skeletonHeader {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.skeletonContent {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+    .sidebar {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .page {
+        padding: var(--space-4) var(--space-3) var(--space-6);
+        gap: var(--space-4);
+    }
+    .subject {
+        font-size: var(--fs-2xl);
+    }
+    .card {
+        padding: var(--space-4);
+    }
+}
