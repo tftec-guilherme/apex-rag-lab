@@ -61,6 +61,52 @@ Salve como `azure-openai-overview.pdf`, `ai-search-basics.pdf`, `doc-intelligenc
 
 ---
 
+## Setup Quick Reference — Env Vars consumidas pelos snippets (17 variáveis)
+
+> **Como usar:** ao longo das Partes 1-7 você vai criando recursos no Portal Azure e anotando endpoints/keys. Esta tabela é o **checklist único** das env vars que cada script `snippets/*.py` consome. Mantenha um arquivo `.env` ou exporte no shell antes de rodar cada script.
+
+| # | Env Var | Service | Definida na | Consumida em | Tipo |
+|---|---------|---------|-------------|--------------|------|
+| 1 | `STORAGE_CONNECTION_STRING` | Storage Account | Parte 1 (Passo 1.3) | `index_pdfs.py`, `index_to_search.py` | conn-string |
+| 2 | `DI_ENDPOINT` | Document Intelligence | Parte 2 (Passo 2.1) | `index_pdfs.py` | endpoint |
+| 3 | `DI_KEY` | Document Intelligence | Parte 2 (Passo 2.1) | `index_pdfs.py` | secret |
+| 4 | `VISION_ENDPOINT` | AI Vision (OCR) | Parte 3 (Passo 3.2) | `function_app.py` | endpoint |
+| 5 | `VISION_KEY` | AI Vision (OCR) | Parte 3 (Passo 3.2) | `function_app.py`, `test_vision_ocr.{sh,ps1}` | secret |
+| 6 | `TRANSLATOR_ENDPOINT` | AI Translator | Parte 4 (Passo 4.2) | `function_app.py` | endpoint |
+| 7 | `TRANSLATOR_KEY` | AI Translator | Parte 4 (Passo 4.2) | `function_app.py`, `test_translator.{sh,ps1}` | secret |
+| 8 | `TRANSLATOR_REGION` | AI Translator | Parte 4 (Passo 4.2) | `function_app.py` | string (`eastus2`) |
+| 9 | `SEARCH_ENDPOINT` | AI Search | Parte 5 (Passo 5.1) | `create_search_index.py`, `index_to_search.py`, `function_app.py` | endpoint |
+| 10 | `SEARCH_ADMIN_KEY` | AI Search | Parte 5 (Passo 5.1) | `create_search_index.py`, `index_to_search.py`, `function_app.py` | secret |
+| 11 | `SEARCH_INDEX` | AI Search | Parte 5 (Passo 5.2) | `function_app.py` | string (`helpsphere-kb`) |
+| 12 | `AOAI_ENDPOINT` | Azure OpenAI | Parte 6 (Passo 6.1) | `index_to_search.py`, `function_app.py` | endpoint |
+| 13 | `AOAI_API_KEY` | Azure OpenAI | Parte 6 (Passo 6.1) | `index_to_search.py`, `function_app.py` | secret |
+| 14 | `EMBEDDING_DEPLOYMENT` | Azure OpenAI | Parte 6 (Passo 6.2) | `function_app.py` | string (`text-embedding-3-large`) |
+| 15 | `CHAT_DEPLOYMENT` | Azure OpenAI | Parte 6 (Passo 6.2) | `function_app.py` | string (`gpt-4.1-mini`) |
+| 16 | `FUNC_URL` | Function App | Parte 7 (Passo 7.1) | `eval_rag.py` | endpoint |
+| 17 | `FUNC_KEY` | Function App | Parte 7 (Passo 7.4) | `eval_rag.py` | secret |
+
+### Como exportar (PowerShell — Windows)
+
+```powershell
+$env:STORAGE_CONNECTION_STRING = "<sua-conn-string>"
+$env:DI_ENDPOINT = "https://di-helpsphere-rag.cognitiveservices.azure.com/"
+$env:DI_KEY = "<sua-key>"
+# ... (idem para as 17 variáveis)
+```
+
+### Como exportar (Bash/Zsh — macOS, Linux, WSL, Git Bash)
+
+```bash
+export STORAGE_CONNECTION_STRING="<sua-conn-string>"
+export DI_ENDPOINT="https://di-helpsphere-rag.cognitiveservices.azure.com/"
+export DI_KEY="<sua-key>"
+# ... (idem para as 17 variáveis)
+```
+
+> **Dica:** crie um `.env` local (gitignored) com todas as 17 variáveis, e use `python-dotenv` ou `[Environment]::SetEnvironmentVariable` no PowerShell para carregar antes de cada script. Nunca commite `.env` no repo.
+
+---
+
 ## Tabela de recursos que serão criados
 
 | Recurso | Nome canônico | SKU/Tier | Custo mensal | Custo no lab |
@@ -195,12 +241,12 @@ Confirme que a subscription correta está selecionada.
 > **Alternativa via Azure CLI:**
 >
 > ```bash
-> az group create \
->   --name rg-lab-intermediario \
->   --location eastus2 \
->   --tags cost-center=apex-helpsphere-ia \
->          environment=lab \
->          owner=guilherme.campos@tftec.com.br \
+> az group create `
+>   --name rg-lab-intermediario `
+>   --location eastus2 `
+>   --tags cost-center=apex-helpsphere-ia `
+>          environment=lab `
+>          owner=guilherme.campos@tftec.com.br `
 >          application=helpsphere-ia
 > ```
 >
@@ -246,17 +292,17 @@ Storage Account precisa nome global único. Use sufixo aleatório (ex: `stlabint
 > STORAGE_NAME="stlabinter${RAND}"
 > echo "Storage name: $STORAGE_NAME"
 >
-> az storage account create \
->   --name $STORAGE_NAME \
->   --resource-group rg-lab-intermediario \
->   --location eastus2 \
->   --sku Standard_LRS \
->   --kind StorageV2 \
+> az storage account create `
+>   --name $STORAGE_NAME `
+>   --resource-group rg-lab-intermediario `
+>   --location eastus2 `
+>   --sku Standard_LRS `
+>   --kind StorageV2 `
 >   --allow-blob-public-access false
 >
-> STORAGE_KEY=$(az storage account keys list \
->   --resource-group rg-lab-intermediario \
->   --account-name $STORAGE_NAME \
+> STORAGE_KEY=$(az storage account keys list `
+>   --resource-group rg-lab-intermediario `
+>   --account-name $STORAGE_NAME `
 >   --query "[0].value" -o tsv)
 >
 > az storage container create --name kb --account-name $STORAGE_NAME --account-key $STORAGE_KEY
@@ -283,12 +329,12 @@ sample-kb/
 Faça upload via Azure CLI:
 
 ```bash
-az storage blob upload-batch \
-  --destination kb \
-  --source ~/Downloads/sample-kb \
-  --pattern "*.pdf" \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY \
+az storage blob upload-batch `
+  --destination kb `
+  --source ~/Downloads/sample-kb `
+  --pattern "*.pdf" `
+  --account-name $STORAGE_NAME `
+  --account-key $STORAGE_KEY `
   --overwrite true
 ```
 
@@ -297,10 +343,10 @@ az storage blob upload-batch \
 Verifique:
 
 ```bash
-az storage blob list \
-  --container-name kb \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY \
+az storage blob list `
+  --container-name kb `
+  --account-name $STORAGE_NAME `
+  --account-key $STORAGE_KEY `
   --output table
 ```
 
@@ -309,9 +355,9 @@ Você deve ver os 3 arquivos PDF listados.
 ## Passo 1.5 — Validar Managed Identity (já criado no Bloco 2)
 
 ```bash
-az identity show \
-  --name mi-helpsphere-ia \
-  --resource-group rg-helpsphere-ia \
+az identity show `
+  --name mi-helpsphere-ia `
+  --resource-group rg-helpsphere-ia `
   --query "{principalId:principalId, clientId:clientId}"
 ```
 
@@ -320,19 +366,19 @@ Anote `principalId` e `clientId`. O `mi-helpsphere-ia` vai ser referenciado por 
 ## Passo 1.6 — Atribuir RBAC do Managed Identity ao Storage
 
 ```bash
-PRINCIPAL_ID=$(az identity show \
-  --name mi-helpsphere-ia \
-  --resource-group rg-helpsphere-ia \
+PRINCIPAL_ID=$(az identity show `
+  --name mi-helpsphere-ia `
+  --resource-group rg-helpsphere-ia `
   --query principalId -o tsv)
 
-STORAGE_ID=$(az storage account show \
-  --name $STORAGE_NAME \
-  --resource-group rg-lab-intermediario \
+STORAGE_ID=$(az storage account show `
+  --name $STORAGE_NAME `
+  --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
-az role assignment create \
-  --assignee $PRINCIPAL_ID \
-  --role "Storage Blob Data Contributor" \
+az role assignment create `
+  --assignee $PRINCIPAL_ID `
+  --role "Storage Blob Data Contributor" `
   --scope $STORAGE_ID
 ```
 
@@ -378,12 +424,12 @@ Após criado:
 > **Alternativa via Azure CLI:**
 >
 > ```bash
-> az cognitiveservices account create \
->   --name di-helpsphere-rag \
->   --resource-group rg-lab-intermediario \
->   --kind FormRecognizer \
->   --sku S0 \
->   --location eastus2 \
+> az cognitiveservices account create `
+>   --name di-helpsphere-rag `
+>   --resource-group rg-lab-intermediario `
+>   --kind FormRecognizer `
+>   --sku S0 `
+>   --location eastus2 `
 >   --yes
 > ```
 >
@@ -392,14 +438,14 @@ Após criado:
 ## Passo 2.2 — Atribuir RBAC do Managed Identity
 
 ```bash
-DI_ID=$(az cognitiveservices account show \
-  --name di-helpsphere-rag \
-  --resource-group rg-lab-intermediario \
+DI_ID=$(az cognitiveservices account show `
+  --name di-helpsphere-rag `
+  --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
-az role assignment create \
-  --assignee $PRINCIPAL_ID \
-  --role "Cognitive Services User" \
+az role assignment create `
+  --assignee $PRINCIPAL_ID `
+  --role "Cognitive Services User" `
   --scope $DI_ID
 ```
 
@@ -548,9 +594,9 @@ source venv/bin/activate  # Linux/Mac
 pip install azure-storage-blob azure-ai-documentintelligence
 
 # Setar env vars
-export STORAGE_CONNECTION_STRING=$(az storage account show-connection-string \
-  --name $STORAGE_NAME \
-  --resource-group rg-lab-intermediario \
+export STORAGE_CONNECTION_STRING=$(az storage account show-connection-string `
+  --name $STORAGE_NAME `
+  --resource-group rg-lab-intermediario `
   --query connectionString -o tsv)
 
 export DI_ENDPOINT="https://di-helpsphere-rag.cognitiveservices.azure.com/"
@@ -575,10 +621,10 @@ Saída esperada:
 ## Passo 2.5 — Verificar saída
 
 ```bash
-az storage blob list \
-  --container-name processed \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY \
+az storage blob list `
+  --container-name processed `
+  --account-name $STORAGE_NAME `
+  --account-key $STORAGE_KEY `
   --output table
 ```
 
@@ -586,11 +632,11 @@ Você deve ver 8 arquivos `.chunks.json`.
 
 Para inspecionar 1:
 ```bash
-az storage blob download \
-  --container-name processed \
-  --name manual_operacao_loja_v3.chunks.json \
-  --file /tmp/sample-chunks.json \
-  --account-name $STORAGE_NAME \
+az storage blob download `
+  --container-name processed `
+  --name manual_operacao_loja_v3.chunks.json `
+  --file /tmp/sample-chunks.json `
+  --account-name $STORAGE_NAME `
   --account-key $STORAGE_KEY
 
 cat /tmp/sample-chunks.json | head -50
@@ -647,14 +693,14 @@ Após criado, no recurso → **Keys and Endpoint**:
 ## Passo 3.3 — Atribuir RBAC
 
 ```bash
-VISION_ID=$(az cognitiveservices account show \
-  --name vis-helpsphere-rag \
-  --resource-group rg-lab-intermediario \
+VISION_ID=$(az cognitiveservices account show `
+  --name vis-helpsphere-rag `
+  --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
-az role assignment create \
-  --assignee $PRINCIPAL_ID \
-  --role "Cognitive Services User" \
+az role assignment create `
+  --assignee $PRINCIPAL_ID `
+  --role "Cognitive Services User" `
   --scope $VISION_ID
 ```
 
@@ -667,9 +713,9 @@ Teste via cURL:
 ```bash
 VISION_KEY="<sua-key>"
 
-curl -X POST "https://vis-helpsphere-rag.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read&language=pt" \
-  -H "Ocp-Apim-Subscription-Key: $VISION_KEY" \
-  -H "Content-Type: application/octet-stream" \
+curl -X POST "https://vis-helpsphere-rag.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read&language=pt" `
+  -H "Ocp-Apim-Subscription-Key: $VISION_KEY" `
+  -H "Content-Type: application/octet-stream" `
   --data-binary @sample-screenshot.png
 ```
 
@@ -719,14 +765,14 @@ Você deve receber JSON com `readResult.blocks[].lines[].text` contendo o texto 
 ## Passo 4.3 — Atribuir RBAC
 
 ```bash
-TR_ID=$(az cognitiveservices account show \
-  --name tr-helpsphere-rag \
-  --resource-group rg-lab-intermediario \
+TR_ID=$(az cognitiveservices account show `
+  --name tr-helpsphere-rag `
+  --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
-az role assignment create \
-  --assignee $PRINCIPAL_ID \
-  --role "Cognitive Services User" \
+az role assignment create `
+  --assignee $PRINCIPAL_ID `
+  --role "Cognitive Services User" `
   --scope $TR_ID
 ```
 
@@ -734,10 +780,10 @@ az role assignment create \
 
 Detect language:
 ```bash
-curl -X POST "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0" \
-  -H "Ocp-Apim-Subscription-Key: $TRANSLATOR_KEY" \
-  -H "Ocp-Apim-Subscription-Region: eastus2" \
-  -H "Content-Type: application/json" \
+curl -X POST "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0" `
+  -H "Ocp-Apim-Subscription-Key: $TRANSLATOR_KEY" `
+  -H "Ocp-Apim-Subscription-Region: eastus2" `
+  -H "Content-Type: application/json" `
   -d '[{"Text":"Hola, no puedo acceder al sistema POS de la tienda."}]'
 ```
 
@@ -745,10 +791,10 @@ Saída: `[{"language":"es","score":1.0}]`
 
 Translate es→pt:
 ```bash
-curl -X POST "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=es&to=pt" \
-  -H "Ocp-Apim-Subscription-Key: $TRANSLATOR_KEY" \
-  -H "Ocp-Apim-Subscription-Region: eastus2" \
-  -H "Content-Type: application/json" \
+curl -X POST "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=es&to=pt" `
+  -H "Ocp-Apim-Subscription-Key: $TRANSLATOR_KEY" `
+  -H "Ocp-Apim-Subscription-Region: eastus2" `
+  -H "Content-Type: application/json" `
   -d '[{"Text":"Hola, no puedo acceder al sistema POS de la tienda."}]'
 ```
 
@@ -794,19 +840,19 @@ Após criado:
 ## Passo 5.3 — Atribuir RBAC
 
 ```bash
-SEARCH_ID=$(az search service show \
-  --name srch-helpsphere-rag \
-  --resource-group rg-lab-intermediario \
+SEARCH_ID=$(az search service show `
+  --name srch-helpsphere-rag `
+  --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
-az role assignment create \
-  --assignee $PRINCIPAL_ID \
-  --role "Search Service Contributor" \
+az role assignment create `
+  --assignee $PRINCIPAL_ID `
+  --role "Search Service Contributor" `
   --scope $SEARCH_ID
 
-az role assignment create \
-  --assignee $PRINCIPAL_ID \
-  --role "Search Index Data Contributor" \
+az role assignment create `
+  --assignee $PRINCIPAL_ID `
+  --role "Search Index Data Contributor" `
   --scope $SEARCH_ID
 ```
 
@@ -1284,19 +1330,19 @@ A Function App vai acessar Storage, Search e Cognitive Services SEM keys hardcod
 >
 > ```bash
 > FUNC_NAME="func-helpsphere-rag-{rand}"  # use o seu
-> FUNC_PRINCIPAL=$(az functionapp identity show \
->   --name $FUNC_NAME \
->   --resource-group rg-lab-intermediario \
+> FUNC_PRINCIPAL=$(az functionapp identity show `
+>   --name $FUNC_NAME `
+>   --resource-group rg-lab-intermediario `
 >   --query principalId -o tsv)
 >
 > # Acesso a Storage
-> az role assignment create --assignee $FUNC_PRINCIPAL \
->   --role "Storage Blob Data Reader" \
+> az role assignment create --assignee $FUNC_PRINCIPAL `
+>   --role "Storage Blob Data Reader" `
 >   --scope $STORAGE_ID
 >
 > # Acesso a Search
-> az role assignment create --assignee $FUNC_PRINCIPAL \
->   --role "Search Index Data Reader" \
+> az role assignment create --assignee $FUNC_PRINCIPAL `
+>   --role "Search Index Data Reader" `
 >   --scope $SEARCH_ID
 >
 > # Acesso a Cognitive Services (DI, Vision, Translator, OpenAI)
@@ -1344,21 +1390,21 @@ A Function App precisa de ~13 vars de ambiente apontando para os endpoints/keys 
 > ```bash
 > FUNC_NAME="func-helpsphere-rag-{rand}"
 >
-> az functionapp config appsettings set \
->   --name $FUNC_NAME \
->   --resource-group rg-lab-intermediario \
->   --settings \
->     SEARCH_ENDPOINT="https://srch-helpsphere-rag.search.windows.net" \
->     SEARCH_INDEX="helpsphere-kb" \
->     SEARCH_ADMIN_KEY="<sua-admin-key>" \
->     AOAI_ENDPOINT="https://aifproj-helpsphere-rag.openai.azure.com/" \
->     AOAI_API_KEY="<sua-aoai-key>" \
->     EMBEDDING_DEPLOYMENT="text-embedding-3-large" \
->     CHAT_DEPLOYMENT="gpt-4.1-mini" \
->     VISION_ENDPOINT="https://vis-helpsphere-rag.cognitiveservices.azure.com/" \
->     VISION_KEY="<vision-key>" \
->     TRANSLATOR_ENDPOINT="https://api.cognitive.microsofttranslator.com/" \
->     TRANSLATOR_KEY="<translator-key>" \
+> az functionapp config appsettings set `
+>   --name $FUNC_NAME `
+>   --resource-group rg-lab-intermediario `
+>   --settings `
+>     SEARCH_ENDPOINT="https://srch-helpsphere-rag.search.windows.net" `
+>     SEARCH_INDEX="helpsphere-kb" `
+>     SEARCH_ADMIN_KEY="<sua-admin-key>" `
+>     AOAI_ENDPOINT="https://aifproj-helpsphere-rag.openai.azure.com/" `
+>     AOAI_API_KEY="<sua-aoai-key>" `
+>     EMBEDDING_DEPLOYMENT="text-embedding-3-large" `
+>     CHAT_DEPLOYMENT="gpt-4.1-mini" `
+>     VISION_ENDPOINT="https://vis-helpsphere-rag.cognitiveservices.azure.com/" `
+>     VISION_KEY="<vision-key>" `
+>     TRANSLATOR_ENDPOINT="https://api.cognitive.microsofttranslator.com/" `
+>     TRANSLATOR_KEY="<translator-key>" `
 >     TRANSLATOR_REGION="eastus2"
 > ```
 
@@ -1779,12 +1825,12 @@ O backend Python do apex-helpsphere já tem ponto de extensão para RAG sob feat
 > RAG_FUNC_KEY="<sua-function-key-da-Parte-7>"
 >
 > # Atualizar env vars do Container App backend
-> az containerapp update \
->   --name capps-backend-{env}-{token} \
->   --resource-group $RG_HELPSPHERE \
->   --set-env-vars \
->     RAG_ENABLED=true \
->     RAG_FUNCTION_URL="$RAG_FUNC_URL" \
+> az containerapp update `
+>   --name capps-backend-{env}-{token} `
+>   --resource-group $RG_HELPSPHERE `
+>   --set-env-vars `
+>     RAG_ENABLED=true `
+>     RAG_FUNCTION_URL="$RAG_FUNC_URL" `
 >     RAG_FUNCTION_KEY="$RAG_FUNC_KEY"
 > ```
 >
@@ -1802,9 +1848,9 @@ O Container App reinicia automaticamente após `Save` (ou `update --set-env-vars
 Com `RAG_ENABLED=true`, o backend Python expõe `/chat/rag` (proxy dedicado para a Function App de RAG, separado do `/chat` upstream nativo do `azure-search-openai-demo` que continua disponível):
 
 ```bash
-curl -X POST "$BACKEND_URI/chat/rag" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <seu-AAD-token>" \
+curl -X POST "$BACKEND_URI/chat/rag" `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer <seu-AAD-token>" `
   -d '{
     "ticket_id": 4521,
     "description": "Como reembolsar lojista quando pedido não foi entregue?"

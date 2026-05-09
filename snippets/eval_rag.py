@@ -5,13 +5,22 @@
 # eval_rag.py
 import os, json, time, requests
 
-FUNC_URL = "https://func-helpsphere-rag-{rand}.azurewebsites.net"
+FUNC_URL = os.environ.get("FUNC_URL", "https://func-helpsphere-rag-{rand}.azurewebsites.net")
 FUNC_KEY = os.environ["FUNC_KEY"]
 
-def evaluate_query(query: str, expected_sources: list[str]) -> dict:
+if "{rand}" in FUNC_URL:
+    raise RuntimeError(
+        "FUNC_URL ainda contem placeholder '{rand}' — defina a env var FUNC_URL com o nome real do Function App "
+        "(ex: export FUNC_URL='https://func-helpsphere-rag-abc123.azurewebsites.net')"
+    )
+
+
+def evaluate_query(query: str, expected_sources: list[str], idx: int = 0) -> dict:
+    # ticket_id 'eval-batch-{idx}' isola telemetria de eval real do Function App.
+    # function_app.py usa ticket_id apenas como echo/telemetria — qualquer string serve.
     start = time.time()
     response = requests.post(
-        f"{FUNC_URL}/api/tickets/eval/suggest",
+        f"{FUNC_URL}/api/tickets/eval-batch-{idx}/suggest",
         headers={"x-functions-key": FUNC_KEY, "Content-Type": "application/json"},
         json={"description": query, "attachment_urls": []},
     )
@@ -38,8 +47,8 @@ def main():
         dataset = [json.loads(l) for l in f]
 
     results = []
-    for item in dataset:
-        r = evaluate_query(item["query"], item["expected_sources"])
+    for idx, item in enumerate(dataset):
+        r = evaluate_query(item["query"], item["expected_sources"], idx=idx)
         print(f"  P@5={r['precision_at_5']:.2f}  latency={r['latency_ms']:.0f}ms  tokens={r['tokens']}")
         results.append(r)
 

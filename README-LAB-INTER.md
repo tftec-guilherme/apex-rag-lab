@@ -2,7 +2,7 @@
 
 > **Lab Intermediário — Disciplina 06: IA e Automação no Azure** · Pós-Graduação Arquitetura Cloud Azure · TFTEC + Anhanguera
 >
-> Pipeline RAG production-grade passo-a-passo no Portal Azure · companion público do [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) · `version-anchor: Q2-2026` · `status: ATIVO Wave 4`
+> Pipeline RAG production-grade passo-a-passo no Portal Azure · companion público do [`apex-helpsphere`](https://github.com/tftec-guilherme/apex-helpsphere) · `version-anchor: Q2-2026` · `status: v0.2.0 ATIVO Wave 4`
 
 ---
 

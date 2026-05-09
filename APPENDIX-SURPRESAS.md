@@ -1,5 +1,13 @@
 # APPENDIX — 47 Surpresas pedagógicas
 
+> ⚠️ **Escopo deste APPENDIX:** este arquivo é **herança do template base `apex-helpsphere`** (snapshot do commit `98ce579`). Cobre surpresas do **provisionamento SaaS HelpSphere**, NÃO do Lab Intermediário RAG.
+>
+> Para surpresas específicas do Lab Inter (RAG, AI Search, Document Intelligence, Foundry Project), veja **[`PARA-O-ALUNO-LAB-INTER.md`](./PARA-O-ALUNO-LAB-INTER.md)** (seção "7 surpresas pedagógicas").
+>
+> **Atenção region:** Surpresa #2 abaixo recomenda `westus3` para o template SaaS HelpSphere base. O **Lab Intermediário usa `eastus2`** porque depende de Foundry Hub `aifhub-apex-prod` provisionado nesta região no Bloco 2. Não é contradição — são contextos diferentes.
+
+---
+
 > Lições aprendidas que **o template Microsoft `azure-search-openai-demo` não documenta**. Todas estão **mitigadas no template SaaS-only** — você vai encontrar **MUITO MENOS** problemas que o professor encontrou. Custo pedagógico cumulativo: ~16h de debugging E2E real (Sessões 9.4-9.5) + cleanup final (Sessão 9.6) + maratona pivot SaaS local 12+h (Sessão 2026-05-06) + first-laptop multi-Python + smoke `azd up` real + cleanup pós-pivot + 7 descobertas ao vivo durante recording 2026-05-07 (Surpresas #41-#47).
 >
 > Defesa arquitetural completa de cada item em [`DECISION-LOG.md`](./DECISION-LOG.md).
