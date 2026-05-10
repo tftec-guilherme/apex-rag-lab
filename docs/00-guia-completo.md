@@ -216,13 +216,21 @@ flowchart TB
 
 ---
 
+## ⚙️ Sintaxe de comandos shell
+
+> **Os blocos shell deste guia usam PowerShell** (Windows-first, alinhado ao público da disciplina). Continuação de linha é `` ` `` (backtick), variáveis de ambiente via `$env:VAR = "..."`, substituição de comando via `(cmd)` ou `$(cmd)`.
+>
+> **Linux / Mac / WSL:** troque `$env:VAR = "..."` por `export VAR="..."`, `$env:VAR = (cmd)` por `export VAR=$(cmd)`, e `` ` `` por `\` no fim das linhas.
+
+---
+
 # Parte 1 — Provisionar fundação (30min)
 
 ## Passo 1.1 — Login e contexto Azure
 
 Abra o terminal e execute:
 
-```bash
+```powershell
 az login
 az account list --output table
 az account set --subscription "<NOME-DA-SUA-SUBSCRIPTION>"
@@ -253,7 +261,7 @@ Confirme que a subscription correta está selecionada.
 
 > **Alternativa via Azure CLI:**
 >
-> ```bash
+> ```powershell
 > az group create `
 >   --name rg-lab-intermediario `
 >   --location eastus2 `
@@ -300,27 +308,27 @@ Storage Account precisa nome global único. Use sufixo aleatório (ex: `stlabint
 
 > **Alternativa via Azure CLI (cria Storage + 3 containers em sequência):**
 >
-> ```bash
-> RAND=$(echo $RANDOM | md5sum | head -c 6)
-> STORAGE_NAME="stlabinter${RAND}"
-> echo "Storage name: $STORAGE_NAME"
+> ```powershell
+> $RAND = -join ((48..57) + (97..122) | Get-Random -Count 6 | ForEach-Object { [char]$_ })
+> $env:STORAGE_NAME = "stlabinter$RAND"
+> Write-Host "Storage name: $env:STORAGE_NAME"
 >
 > az storage account create `
->   --name $STORAGE_NAME `
+>   --name $env:STORAGE_NAME `
 >   --resource-group rg-lab-intermediario `
 >   --location eastus2 `
 >   --sku Standard_LRS `
 >   --kind StorageV2 `
 >   --allow-blob-public-access false
 >
-> STORAGE_KEY=$(az storage account keys list `
+> $env:STORAGE_KEY = (az storage account keys list `
 >   --resource-group rg-lab-intermediario `
->   --account-name $STORAGE_NAME `
+>   --account-name $env:STORAGE_NAME `
 >   --query "[0].value" -o tsv)
 >
-> az storage container create --name kb --account-name $STORAGE_NAME --account-key $STORAGE_KEY
-> az storage container create --name processed --account-name $STORAGE_NAME --account-key $STORAGE_KEY
-> az storage container create --name screenshots --account-name $STORAGE_NAME --account-key $STORAGE_KEY
+> az storage container create --name kb --account-name $env:STORAGE_NAME --account-key $env:STORAGE_KEY
+> az storage container create --name processed --account-name $env:STORAGE_NAME --account-key $env:STORAGE_KEY
+> az storage container create --name screenshots --account-name $env:STORAGE_NAME --account-key $env:STORAGE_KEY
 > ```
 
 > **Para que cada container?**
@@ -341,13 +349,13 @@ sample-kb/
 
 Faça upload via Azure CLI:
 
-```bash
+```powershell
 az storage blob upload-batch `
   --destination kb `
   --source ~/Downloads/sample-kb `
   --pattern "*.pdf" `
-  --account-name $STORAGE_NAME `
-  --account-key $STORAGE_KEY `
+  --account-name $env:STORAGE_NAME `
+  --account-key $env:STORAGE_KEY `
   --overwrite true
 ```
 
@@ -355,11 +363,11 @@ az storage blob upload-batch `
 
 Verifique:
 
-```bash
+```powershell
 az storage blob list `
   --container-name kb `
-  --account-name $STORAGE_NAME `
-  --account-key $STORAGE_KEY `
+  --account-name $env:STORAGE_NAME `
+  --account-key $env:STORAGE_KEY `
   --output table
 ```
 
@@ -369,7 +377,7 @@ Você deve ver os 3 arquivos PDF listados.
 
 A `mi-helpsphere-ia` é uma **User-assigned Managed Identity** criada no Resource Group da família IA (`rg-helpsphere-ia` do Bloco 2). Vai ser referenciada por todos os recursos deste lab (Storage, AI Search, Function App) — fica fora do `rg-lab-intermediario` propositalmente: assim sobrevive ao `az group delete rg-lab-intermediario` no cleanup e fica disponível para os Labs Final e Avançado.
 
-```bash
+```powershell
 # Criar a MI usando a mesma location do RG da família IA
 az identity create `
   --name mi-helpsphere-ia `
@@ -379,7 +387,7 @@ az identity create `
 
 Validar e capturar identifiers:
 
-```bash
+```powershell
 az identity show `
   --name mi-helpsphere-ia `
   --resource-group rg-helpsphere-ia `
@@ -392,21 +400,21 @@ Anote `principalId` e `clientId`. O `mi-helpsphere-ia` vai ser referenciado por 
 
 ## Passo 1.6 — Atribuir RBAC do Managed Identity ao Storage
 
-```bash
-PRINCIPAL_ID=$(az identity show `
+```powershell
+$env:PRINCIPAL_ID = (az identity show `
   --name mi-helpsphere-ia `
   --resource-group rg-helpsphere-ia `
   --query principalId -o tsv)
 
-STORAGE_ID=$(az storage account show `
-  --name $STORAGE_NAME `
+$env:STORAGE_ID = (az storage account show `
+  --name $env:STORAGE_NAME `
   --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
 az role assignment create `
-  --assignee $PRINCIPAL_ID `
+  --assignee $env:PRINCIPAL_ID `
   --role "Storage Blob Data Contributor" `
-  --scope $STORAGE_ID
+  --scope $env:STORAGE_ID
 ```
 
 ## ✅ Checkpoint Parte 1
@@ -450,7 +458,7 @@ Após criado:
 
 > **Alternativa via Azure CLI:**
 >
-> ```bash
+> ```powershell
 > az cognitiveservices account create `
 >   --name di-helpsphere-rag `
 >   --resource-group rg-lab-intermediario `
@@ -464,16 +472,16 @@ Após criado:
 
 ## Passo 2.2 — Atribuir RBAC do Managed Identity
 
-```bash
-DI_ID=$(az cognitiveservices account show `
+```powershell
+$env:DI_ID = (az cognitiveservices account show `
   --name di-helpsphere-rag `
   --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
 az role assignment create `
-  --assignee $PRINCIPAL_ID `
+  --assignee $env:PRINCIPAL_ID `
   --role "Cognitive Services User" `
-  --scope $DI_ID
+  --scope $env:DI_ID
 ```
 
 ## Passo 2.3 — Script Python de indexação (chunking layout-aware)
@@ -650,26 +658,26 @@ Saída esperada:
 
 ## Passo 2.5 — Verificar saída
 
-```bash
+```powershell
 az storage blob list `
   --container-name processed `
-  --account-name $STORAGE_NAME `
-  --account-key $STORAGE_KEY `
+  --account-name $env:STORAGE_NAME `
+  --account-key $env:STORAGE_KEY `
   --output table
 ```
 
 Você deve ver 8 arquivos `.chunks.json`.
 
 Para inspecionar 1:
-```bash
+```powershell
 az storage blob download `
   --container-name processed `
   --name manual_operacao_loja_v3.chunks.json `
-  --file /tmp/sample-chunks.json `
-  --account-name $STORAGE_NAME `
-  --account-key $STORAGE_KEY
+  --file $env:TEMP\sample-chunks.json `
+  --account-name $env:STORAGE_NAME `
+  --account-key $env:STORAGE_KEY
 
-cat /tmp/sample-chunks.json | head -50
+Get-Content $env:TEMP\sample-chunks.json -TotalCount 50
 ```
 
 ## ✅ Checkpoint Parte 2
@@ -722,16 +730,16 @@ Após criado, no recurso → **Keys and Endpoint**:
 
 ## Passo 3.3 — Atribuir RBAC
 
-```bash
-VISION_ID=$(az cognitiveservices account show `
+```powershell
+$env:VISION_ID = (az cognitiveservices account show `
   --name vis-helpsphere-rag `
   --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
 az role assignment create `
-  --assignee $PRINCIPAL_ID `
+  --assignee $env:PRINCIPAL_ID `
   --role "Cognitive Services User" `
-  --scope $VISION_ID
+  --scope $env:VISION_ID
 ```
 
 ## Passo 3.4 — Testar OCR com imagem de exemplo
@@ -740,11 +748,11 @@ Baixe a imagem de exemplo `sample-screenshot.png` (em `03_Aplicações/sample-sc
 
 Teste via cURL:
 
-```bash
-VISION_KEY="<sua-key>"
+```powershell
+$env:VISION_KEY = "<sua-key>"
 
 curl -X POST "https://vis-helpsphere-rag.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read&language=pt" `
-  -H "Ocp-Apim-Subscription-Key: $VISION_KEY" `
+  -H "Ocp-Apim-Subscription-Key: $env:VISION_KEY" `
   -H "Content-Type: application/octet-stream" `
   --data-binary @sample-screenshot.png
 ```
@@ -794,24 +802,24 @@ Você deve receber JSON com `readResult.blocks[].lines[].text` contendo o texto 
 
 ## Passo 4.3 — Atribuir RBAC
 
-```bash
-TR_ID=$(az cognitiveservices account show `
+```powershell
+$env:TR_ID = (az cognitiveservices account show `
   --name tr-helpsphere-rag `
   --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
 az role assignment create `
-  --assignee $PRINCIPAL_ID `
+  --assignee $env:PRINCIPAL_ID `
   --role "Cognitive Services User" `
-  --scope $TR_ID
+  --scope $env:TR_ID
 ```
 
 ## Passo 4.4 — Testar detect + translate
 
 Detect language:
-```bash
+```powershell
 curl -X POST "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0" `
-  -H "Ocp-Apim-Subscription-Key: $TRANSLATOR_KEY" `
+  -H "Ocp-Apim-Subscription-Key: $env:TRANSLATOR_KEY" `
   -H "Ocp-Apim-Subscription-Region: eastus2" `
   -H "Content-Type: application/json" `
   -d '[{"Text":"Hola, no puedo acceder al sistema POS de la tienda."}]'
@@ -820,9 +828,9 @@ curl -X POST "https://api.cognitive.microsofttranslator.com/detect?api-version=3
 Saída: `[{"language":"es","score":1.0}]`
 
 Translate es→pt:
-```bash
+```powershell
 curl -X POST "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=es&to=pt" `
-  -H "Ocp-Apim-Subscription-Key: $TRANSLATOR_KEY" `
+  -H "Ocp-Apim-Subscription-Key: $env:TRANSLATOR_KEY" `
   -H "Ocp-Apim-Subscription-Region: eastus2" `
   -H "Content-Type: application/json" `
   -d '[{"Text":"Hola, no puedo acceder al sistema POS de la tienda."}]'
@@ -869,21 +877,21 @@ Após criado:
 
 ## Passo 5.3 — Atribuir RBAC
 
-```bash
-SEARCH_ID=$(az search service show `
+```powershell
+$env:SEARCH_ID = (az search service show `
   --name srch-helpsphere-rag `
   --resource-group rg-lab-intermediario `
   --query id -o tsv)
 
 az role assignment create `
-  --assignee $PRINCIPAL_ID `
+  --assignee $env:PRINCIPAL_ID `
   --role "Search Service Contributor" `
-  --scope $SEARCH_ID
+  --scope $env:SEARCH_ID
 
 az role assignment create `
-  --assignee $PRINCIPAL_ID `
+  --assignee $env:PRINCIPAL_ID `
   --role "Search Index Data Contributor" `
-  --scope $SEARCH_ID
+  --scope $env:SEARCH_ID
 ```
 
 ## Passo 5.4 — Criar index com vector field
@@ -1007,11 +1015,11 @@ client.create_index(index)
 print(f"[+] Index '{INDEX_NAME}' criado com vector + semantic ranker")
 ```
 
-```bash
+```powershell
 pip install azure-search-documents
 
-export SEARCH_ENDPOINT="https://srch-helpsphere-rag.search.windows.net"
-export SEARCH_ADMIN_KEY="<sua-admin-key>"
+$env:SEARCH_ENDPOINT = "https://srch-helpsphere-rag.search.windows.net"
+$env:SEARCH_ADMIN_KEY = "<sua-admin-key>"
 
 python create_search_index.py
 ```
@@ -1200,7 +1208,7 @@ if __name__ == "__main__":
     main()
 ```
 
-```bash
+```powershell
 pip install openai
 
 python index_to_search.py
@@ -1355,28 +1363,28 @@ A Function App vai acessar Storage, Search e Cognitive Services SEM keys hardcod
 
 > **Alternativa via Azure CLI** (mais rápido para roles em massa):
 >
-> ```bash
-> FUNC_NAME="func-helpsphere-rag-{rand}"  # use o seu
-> FUNC_PRINCIPAL=$(az functionapp identity show `
->   --name $FUNC_NAME `
+> ```powershell
+> $env:FUNC_NAME = "func-helpsphere-rag-{rand}"  # use o seu
+> $env:FUNC_PRINCIPAL = (az functionapp identity show `
+>   --name $env:FUNC_NAME `
 >   --resource-group rg-lab-intermediario `
 >   --query principalId -o tsv)
 >
 > # Acesso a Storage
-> az role assignment create --assignee $FUNC_PRINCIPAL `
+> az role assignment create --assignee $env:FUNC_PRINCIPAL `
 >   --role "Storage Blob Data Reader" `
->   --scope $STORAGE_ID
+>   --scope $env:STORAGE_ID
 >
 > # Acesso a Search
-> az role assignment create --assignee $FUNC_PRINCIPAL `
+> az role assignment create --assignee $env:FUNC_PRINCIPAL `
 >   --role "Search Index Data Reader" `
->   --scope $SEARCH_ID
+>   --scope $env:SEARCH_ID
 >
 > # Acesso a Cognitive Services (DI, Vision, Translator, OpenAI)
-> for service in di-helpsphere-rag vis-helpsphere-rag tr-helpsphere-rag; do
->   RESOURCE_ID=$(az cognitiveservices account show -n $service -g rg-lab-intermediario --query id -o tsv)
->   az role assignment create --assignee $FUNC_PRINCIPAL --role "Cognitive Services User" --scope $RESOURCE_ID
-> done
+> foreach ($service in @("di-helpsphere-rag", "vis-helpsphere-rag", "tr-helpsphere-rag")) {
+>   $RESOURCE_ID = (az cognitiveservices account show -n $service -g rg-lab-intermediario --query id -o tsv)
+>   az role assignment create --assignee $env:FUNC_PRINCIPAL --role "Cognitive Services User" --scope $RESOURCE_ID
+> }
 > ```
 
 > **Nota pedagógica:** role assignments podem levar 1-5min para propagar globalmente. Se o primeiro deploy falhar com 401/403, aguarde e tente novamente.
@@ -1414,11 +1422,11 @@ A Function App precisa de ~13 vars de ambiente apontando para os endpoints/keys 
 
 > **Alternativa via Azure CLI** (bulk em uma chamada):
 >
-> ```bash
-> FUNC_NAME="func-helpsphere-rag-{rand}"
+> ```powershell
+> $env:FUNC_NAME = "func-helpsphere-rag-{rand}"
 >
 > az functionapp config appsettings set `
->   --name $FUNC_NAME `
+>   --name $env:FUNC_NAME `
 >   --resource-group rg-lab-intermediario `
 >   --settings `
 >     SEARCH_ENDPOINT="https://srch-helpsphere-rag.search.windows.net" `
@@ -1708,9 +1716,9 @@ def suggest(req: func.HttpRequest) -> func.HttpResponse:
 
 ## Passo 7.6 — Deploy via Azure CLI
 
-```bash
+```powershell
 cd func-helpsphere-rag/
-func azure functionapp publish $FUNC_NAME --python
+func azure functionapp publish $env:FUNC_NAME --python
 ```
 
 Aguarde ~3-5min. No fim, vai imprimir a URL:
@@ -1781,14 +1789,14 @@ Esta Parte 8 reaproveita o Resource Group e a infra já provisionada pelo Bloco 
 
 No diretório raiz do fork `apex-rag-lab` (onde está o `azure.yaml`):
 
-```bash
+```powershell
 # Descobrir o RG configurado no azd env atual
 azd env get-value AZURE_RESOURCE_GROUP
 # Ex.: rg-helpsphere-actions
 
 # Validar que o RG existe e está provisionado
-export RG_HELPSPHERE=$(azd env get-value AZURE_RESOURCE_GROUP)
-az group show --name $RG_HELPSPHERE --query "properties.provisioningState" -o tsv
+$env:RG_HELPSPHERE = (azd env get-value AZURE_RESOURCE_GROUP)
+az group show --name $env:RG_HELPSPHERE --query "properties.provisioningState" -o tsv
 # Esperado: Succeeded
 ```
 
@@ -1796,17 +1804,17 @@ Se `azd env get-value` não retornar valor, ou se o `az group show` falhar com `
 
 Capture as URLs já existentes que vamos usar adiante:
 
-```bash
-export BACKEND_URI=$(azd env get-value BACKEND_URI)
-export TICKETS_BACKEND_URI=$(azd env get-value TICKETS_BACKEND_URI)
-export FRONTEND_URI=$(azd env get-value FRONTEND_URI)
+```powershell
+$env:BACKEND_URI = (azd env get-value BACKEND_URI)
+$env:TICKETS_BACKEND_URI = (azd env get-value TICKETS_BACKEND_URI)
+$env:FRONTEND_URI = (azd env get-value FRONTEND_URI)
 ```
 
 ## Passo 8.2 — Tour dos 15 arquivos do plug RAG no fork
 
 Antes de editar qualquer linha, abra o fork no VS Code e percorra os 15 arquivos do plug RAG. Treze deles já vêm prontos (referência canônica); apenas 4 contêm marcadores `[CRIAR-X]` que você vai preencher nos próximos passos.
 
-```bash
+```powershell
 code .   # na raiz do fork apex-rag-lab
 ```
 
@@ -1944,7 +1952,7 @@ Os markers restantes (`[CRIAR-3]` em diante) propagam a flag em pontos pontuais 
 
 Antes de redeployar, exponha ao stack as 4 env vars que controlam o plug RAG. Use os valores capturados ao final da Parte 7 (URL e key da Function App `func-helpsphere-rag` + a flag mestra).
 
-```bash
+```powershell
 azd env set RAG_FUNCTION_URL "https://func-helpsphere-rag-{rand}.azurewebsites.net"
 azd env set RAG_FUNCTION_KEY "<sua-function-key-da-Parte-7>"
 azd env set ENABLE_CHAT "true"
@@ -1960,15 +1968,15 @@ azd env set RAG_ENABLED "true"
 
 Confirme:
 
-```bash
-azd env get-values | grep -E "RAG_|ENABLE_CHAT"
+```powershell
+azd env get-values | Select-String -Pattern "RAG_|ENABLE_CHAT"
 ```
 
 ## Passo 8.7 — `azd up` (deploy completo do fork)
 
 Com os 4 arquivos editados e as env vars setadas, faça o redeploy do stack inteiro a partir da raiz do fork:
 
-```bash
+```powershell
 azd up
 ```
 
@@ -1984,7 +1992,7 @@ Tempo estimado total: **6-10min** (depende da camada de cache Docker e do tamanh
 > **Troubleshooting comum:**
 > - **`The resource name X is already in use`** — colisão de nome global (Storage, ACR, Function App). Rode `azd env new <novo-nome>` e tente novamente OU edite `infra/main.bicep` para usar `uniqueString(resourceGroup().id)` no token.
 > - **`SubscriptionLimitReached`** — quota de Container Apps por região atingida. Use região alternativa ou solicite quota.
-> - **`ImagePullBackOff` na nova revision** — ACR auth pendente. Aguarde ~2min e dê `az containerapp revision restart -n capps-backend-{env} -g $RG_HELPSPHERE --revision <nome>`.
+> - **`ImagePullBackOff` na nova revision** — ACR auth pendente. Aguarde ~2min e dê `az containerapp revision restart -n capps-backend-{env} -g $env:RG_HELPSPHERE --revision <nome>`.
 
 ## Passo 8.8 — Validação 4 hosts no Portal + smoke teste end-to-end
 
@@ -2132,8 +2140,8 @@ if __name__ == "__main__":
     main()
 ```
 
-```bash
-export FUNC_KEY="<function-key>"
+```powershell
+$env:FUNC_KEY = "<function-key>"
 python eval_rag.py
 ```
 
@@ -2228,7 +2236,7 @@ echo "Lab Intermediario cleanup iniciado"
 > **CUSTO se esquecer ligado:** ~**R$ 80-120/mês** com IA stack ativa (AI Search S1 sozinho = R$ 250/mês; foi removido por estar em `rg-lab-intermediario`, mas Foundry Hub + Storage + Log Analytics em `rg-helpsphere-ia` ainda somam R$ 80-120/mês). **NÃO esqueça.**
 
 Verificar em ~3-5min:
-```bash
+```powershell
 az group exists --name rg-lab-intermediario
 # false = deletado com sucesso
 ```
