@@ -148,7 +148,7 @@ flowchart TB
         end
 
         subgraph Indexing["Pipeline de indexação batch"]
-            STORAGE[Storage Account<br/>sthlabinter{rand}<br/>blobs: kb/, processed/]
+            STORAGE[Storage Account<br/>sthlabinter&#123;rand&#125;<br/>blobs: kb/, processed/]
             DI[Document Intelligence<br/>di-helpsphere-rag<br/>prebuilt-layout]
         end
 
@@ -164,10 +164,10 @@ flowchart TB
         AI_INSIGHTS[Application Insights<br/>ai-helpsphere-rag]
     end
 
-    subgraph Helpsphere["Stack apex-helpsphere (Bloco 2 — RG rg-helpsphere-{env})"]
-        APP_FRONT[App Service<br/>app-helpsphere-{env}<br/>Vite static frontend]
-        CAPP_BACK[Container App<br/>capps-backend-{env}<br/>Python — endpoint /chat/rag]
-        CAPP_TICK[Container App<br/>capps-tickets-{env}<br/>.NET tickets API]
+    subgraph Helpsphere["Stack apex-helpsphere (Bloco 2 — RG rg-helpsphere-&#123;env&#125;)"]
+        APP_FRONT[App Service<br/>app-helpsphere-&#123;env&#125;<br/>Vite static frontend]
+        CAPP_BACK[Container App<br/>capps-backend-&#123;env&#125;<br/>Python — endpoint /chat/rag]
+        CAPP_TICK[Container App<br/>capps-tickets-&#123;env&#125;<br/>.NET tickets API]
     end
 
     REPO -.azd up deploy único.-> FUNC
@@ -177,7 +177,7 @@ flowchart TB
 
     BROWSER -->|carrega bundle estático| APP_FRONT
     BROWSER -->|POST /chat/rag<br/>Bearer JWT| CAPP_BACK
-    BROWSER -->|GET /tickets/{id}| CAPP_TICK
+    BROWSER -->|GET /tickets/&#123;id&#125;| CAPP_TICK
     CAPP_BACK -->|proxy autenticado| FUNC
 
     FUNC -->|se anexo imagem| VISION
