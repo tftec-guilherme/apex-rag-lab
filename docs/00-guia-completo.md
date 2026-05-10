@@ -1,6 +1,6 @@
 # 📘 Lab Intermediário D06 — Guia Completo Portal Azure
 
-> **Companion público do Lab Intermediário (RAG)** · Disciplina 06: IA e Automação no Azure · Pós-Graduação Arquitetura Cloud Azure · TFTEC + Anhanguera
+> **Companion público do Lab Intermediário (RAG)** · Disciplina 06: IA e Automação no Azure · Pós-Graduação Arquitetura Cloud Azure · Anhanguera
 >
 > **Caminho oficial:** este arquivo é a cópia ativa e canônica do guia do Lab Intermediário. Para navegar parte-a-parte, use `docs/parte-01.md` a `docs/parte-09.md`.
 >
@@ -47,7 +47,7 @@
 
 ### Conjunto de PDFs de exemplo (3 PDFs públicos Microsoft Learn)
 
-Em vez de usar PDFs proprietários da Apex Group, vamos usar **3 documentos públicos da Microsoft Learn** como base de conhecimento didática. Isso garante que qualquer aluno consegue reproduzir o lab sem depender de assets internos da TFTEC.
+Em vez de usar PDFs proprietários da Apex Group, vamos usar **3 documentos públicos da Microsoft Learn** como base de conhecimento didática. Isso garante que qualquer aluno consegue reproduzir o lab sem depender de assets internos do curso.
 
 **Baixe estes 3 PDFs** (use "Print to PDF" do navegador OU `wget`/`curl`):
 
@@ -259,7 +259,7 @@ Confirme que a subscription correta está selecionada.
 >   --location eastus2 `
 >   --tags cost-center=apex-helpsphere-ia `
 >          environment=lab `
->          owner=guilherme.campos@tftec.com.br `
+>          owner=guilherme.prux@live.com `
 >          application=helpsphere-ia
 > ```
 >
