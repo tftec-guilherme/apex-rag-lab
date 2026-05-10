@@ -1,3 +1,19 @@
+> ⚠️ **Conteúdo pré-Wave 4 — INCOMPATÍVEL com arquitetura atual do Lab Inter**
+>
+> Este capítulo descreve uma arquitetura **OBSOLETA** (Function App backend monolítico + endpoint `/chat` + edita `Answer.tsx`) usando o template `apex-helpsphere` antigo. **Não siga este capítulo se você está fazendo o Lab Intermediário Wave 4.**
+>
+> A arquitetura canônica atual usa:
+> - Backend Container App `capps-backend-{env}` (não Function App monolítico)
+> - Endpoint `POST /chat/rag` (não `/chat`)
+> - Componente `ChatPanel` (não `Answer.tsx`)
+> - Workflow: `git clone apex-rag-lab` + edita `[CRIAR-X]` markers + `azd up` (não fork separado de `apex-helpsphere`)
+>
+> ➡️ **Para o Lab Inter atual, siga `docs/00-guia-completo.md` (Parte 8) ou `docs/parte-08.md`.**
+>
+> Este conteúdo permanece em `archive/` apenas como referência histórica para futuros labs sobre Cognitive Search Skillset declarativo.
+
+---
+
 # Capítulo 09 — Query RAG via REST + integração HelpSphere
 
 > **Objetivo:** consumir o `kb-apex-index` via REST de fora do Portal — primeiro com `curl`, depois com um sample HTML/JS standalone, e finalmente integrando no backend Python do `apex-helpsphere` para responder dúvidas dos atendentes durante criação/edição de tickets.

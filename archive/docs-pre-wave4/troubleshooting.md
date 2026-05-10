@@ -226,6 +226,12 @@ Aguarde 30-60s.
 
 ---
 
+> ⚠️ **Capítulo 09 (Q1) — referências pré-Wave 4 obsoletas**
+>
+> A seção abaixo (Cap 09) contém referências a arquitetura obsoleta: backend Function App monolítico + endpoint `/chat` + componente `Answer.tsx`. A arquitetura Wave 4 atual usa Container App `capps-backend-{env}` + endpoint `POST /chat/rag` + componente `ChatPanel`.
+>
+> Para troubleshooting do Lab Inter Wave 4 atual, consulte `docs/troubleshooting.md` na raiz do `docs/`. Os caps 01-08 e 10 abaixo permanecem aplicáveis (não tocam diretamente em apex-helpsphere).
+
 ## Capítulo 09 — RAG Query
 
 ### CORS error no caminho B (HTML)

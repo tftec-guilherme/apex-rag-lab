@@ -8,6 +8,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [v0.3.0] — 2026-05-XX ★ Wave 4 ACTIVE pedagogical rewrite (Story 06.13)
+
+### Added
+
+- **Parte 8 reescrita 4 → 8 Passos** (`docs/00-guia-completo.md`): aluno agora edita ~19 marcadores `[CRIAR-X]` em 4 arquivos críticos do fork (`rag_chat.py`, `ChatPanel.tsx`, `Shell.tsx`, `authConfig.ts`) + `azd up` + valida 4 hosts no Portal Azure. Cumpre a promessa do `README-LAB-INTER.md` linha 32 ("aluno cria 15 arquivos do zero" — agora ACTIVE).
+- **`[CRIAR-X]` markers nos 4 arquivos críticos** — 19 marcadores total (5 em `rag_chat.py` + 7 em `ChatPanel.tsx` + 4 em `Shell.tsx` + 3 em `authConfig.ts`). Cada marker tem descrição + WHY + Hint inline para guiar a edição ao vivo.
+- **Subgraph `DEV` no diagrama mermaid** com setas `azd up` ligando o fork local aos 4 hosts deployados — explicita o conceito "fork-funcional único, deploy único".
+
+### Changed
+
+- **Diagrama de arquitetura corrigido** (linha ~132 do guia): substituiu `func-helpsphere-prod` (Function App, errado) por 3 caixas reais (App Service `app-helpsphere-{env}` + Container App `capps-backend-{env}` + Container App `capps-tickets-{env}`). Endpoint corrigido: `GET /api/tickets/{id}/suggest` → `POST /chat/rag`.
+- **Tabela "Estrutura do lab"** (linha ~201 do guia): célula da Parte 7 atualiza nome correto da Function App; célula da Parte 8 reflete novo workflow ("8 Passos: edita markers + `azd up` + valida 4 hosts").
+- **Parte 7 refinos**: nome correto `func-helpsphere-rag` em todas as menções; callout no topo: "ao final você verá esta Function App lado a lado com os 3 hosts do `apex-helpsphere` no Portal Azure".
+- **`docs/parte-08.md` (navegação)**: simplificada — removido pré-requisito condicional sobre template ≥v2.2.0 (obsoleto; apex-rag-lab é fork-funcional único agora).
+- **`PARA-O-ALUNO-LAB-INTER.md`**: nova seção "Workflow Parte 8 (clone único)" descrevendo `git clone apex-rag-lab` → edita markers → `azd up`. Surpresa #7 atualizada.
+
+### Removed
+
+- **Referência a "PR #20 mergeado em main do apex-helpsphere"** — esse PR foi REVERTIDO (Story 06.10) e o RAG vive agora canonicamente em `apex-rag-lab`.
+- **Tempos individuais por Passo** (proibidos per memory `feedback_no_per_passo_times_presumptuous`) — mantidos apenas `(1h)` no header da Parte 7 e `(30min)` no header da Parte 8.
+- **Pré-requisito condicional sobre template `apex-helpsphere` ≥v2.2.0** — não se aplica mais (fork-funcional único).
+
+### Audit (informativo)
+
+- `archive/docs-pre-wave4/09-rag-query-sample.md` e `archive/docs-pre-wave4/troubleshooting.md` (Cap 09) marcados com banner `⚠️ Wave 4` (HIGH priority recommendation do audit). Outros caps de `archive/` permanecem como referência histórica sem conflito com o guia Wave 4 ACTIVE.
+
+### Pedagogical impact
+
+- ✅ Lab Inter agora é **ACTIVE pedagogical** — aluno faz edições reais em 4 arquivos do fork (não apenas ativa flags em código pré-existente)
+- ✅ Promessa do `README-LAB-INTER.md` linha 32 cumprida (passive → active)
+- ✅ Workflow "clone único" reforça filosofia "fork-funcional, deploy único, 4 hosts visíveis Portal"
+
+### References
+
+- Story: `docs/stories/06.13.lab-inter-active-rewrite-partes-7-8.md` (azure-retail monorepo)
+- Audit report: `docs/stories/06.13/audit-archive-conflicts.md`
+- Implementation plan: `docs/stories/06.13/plan/implementation.yaml`
+- Memory feedback: `feedback_lab_inter_active_vs_passive.md`
+
+---
+
 ## [v0.2.0] — 2026-05-09 ★ Wave 4 restored
 
 ### Reverted

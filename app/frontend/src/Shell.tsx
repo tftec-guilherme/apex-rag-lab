@@ -10,6 +10,8 @@ import { BrandMark } from "./components/BrandMark/BrandMark";
 import { ChatPanel } from "./components/ChatPanel/ChatPanel";
 import { LoginGate } from "./components/LoginGate/LoginGate";
 import { LoginContext } from "./loginContext";
+// [CRIAR-X 1]: importar `ragEnabled` (vem de /auth_setup com base na env RAG_ENABLED do backend). Sem este import o triple-gate não tem a variável e o ChatPanel nunca monta.
+// Hint: import { useLogin, enableChat, ragEnabled, checkLoggedIn } from "./authConfig";
 import { useLogin, enableChat, ragEnabled, checkLoggedIn } from "./authConfig";
 import styles from "./Shell.module.css";
 
@@ -59,6 +61,8 @@ const resolvePageMeta = (pathname: string) => {
  * navegação hash-based). HashRouter põe a rota em `location.hash`, então
  * `location.search` da useLocation() costuma estar vazio — checamos ambos.
  */
+// [CRIAR-X 2]: hook customizado que detecta `?chat=1` na URL. Funciona com hash routing (HashRouter) — chega a inspecionar `window.location.hash` quando o search está vazio. Listeners em popstate/hashchange permitem toggle ao vivo sem reload.
+// Hint: useState inicializado com readChatFlag(), useEffect registra popstate + hashchange handlers, retorna boolean.
 const useChatQueryFlag = (): boolean => {
     const [enabled, setEnabled] = useState<boolean>(() => readChatFlag());
 
@@ -106,6 +110,8 @@ const ShellLayout = () => {
     //   - ?chat=1 presente na URL (Opção A do guia)
     // Estado dormente preservado (zero overhead quando flags off).
     const [chatPanelClosed, setChatPanelClosed] = useState<boolean>(false);
+    // [CRIAR-X 3]: triple-gate decide se o ChatPanel monta — TODAS as 3 flags devem estar true: (a) ragEnabled (backend RAG_ENABLED), (b) enableChat (toggle global de chat — preserva consistência com nav), (c) chatQueryActive (flag ?chat=1 na URL). Plus !chatPanelClosed permite fechar manualmente sem reset da URL.
+    // Hint: useMemo(() => ragEnabled && enableChat && chatQueryActive && !chatPanelClosed, [chatQueryActive, chatPanelClosed])
     const chatPanelVisible = useMemo(
         () => ragEnabled && enableChat && chatQueryActive && !chatPanelClosed,
         [chatQueryActive, chatPanelClosed]
@@ -160,6 +166,8 @@ const ShellLayout = () => {
                     <Outlet />
                 </main>
             </div>
+            {/* [CRIAR-X 4]: render do ChatPanel — só monta quando triple-gate é true. onClose seta chatPanelClosed para esconder o painel sem reset da flag de URL (?chat=1 continua lá). */}
+            {/* Hint: {chatPanelVisible && <ChatPanel onClose={() => setChatPanelClosed(true)} />} */}
             {chatPanelVisible && <ChatPanel onClose={() => setChatPanelClosed(true)} />}
         </div>
     );

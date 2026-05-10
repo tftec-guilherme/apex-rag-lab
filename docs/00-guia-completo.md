@@ -132,11 +132,15 @@ export DI_KEY="<sua-key>"
 ```mermaid
 flowchart TB
     subgraph User["Usuário Diego (Atendente)"]
-        BROWSER[Frontend HelpSphere<br/>botão 'Sugerir resposta']
+        BROWSER[Frontend HelpSphere<br/>botão 'Sugerir resposta'<br/>+ ChatPanel ?chat=1]
     end
 
-    subgraph RG["Resource Group: rg-lab-intermediario"]
-        FUNC[Function App<br/>func-helpsphere-rag<br/>orquestração]
+    subgraph DEV["Workstation do aluno"]
+        REPO[apex-rag-lab fork<br/>azd up deploy único]
+    end
+
+    subgraph RG["Resource Group: rg-lab-intermediario (Bloco 3)"]
+        FUNC[Function App<br/>func-helpsphere-rag<br/>orquestração RAG]
 
         subgraph Inputs["Pré-processamento"]
             VISION[Azure AI Vision<br/>OCR screenshots]
@@ -160,12 +164,21 @@ flowchart TB
         AI_INSIGHTS[Application Insights<br/>ai-helpsphere-rag]
     end
 
-    subgraph Helpsphere["HelpSphere existente"]
-        HS_API[Function App<br/>func-helpsphere-prod<br/>API tickets]
+    subgraph Helpsphere["Stack apex-helpsphere (Bloco 2 — RG rg-helpsphere-{env})"]
+        APP_FRONT[App Service<br/>app-helpsphere-{env}<br/>Vite static frontend]
+        CAPP_BACK[Container App<br/>capps-backend-{env}<br/>Python — endpoint /chat/rag]
+        CAPP_TICK[Container App<br/>capps-tickets-{env}<br/>.NET tickets API]
     end
 
-    BROWSER -->|GET /api/tickets/{id}/suggest| HS_API
-    HS_API -->|forward ticket data| FUNC
+    REPO -.azd up deploy único.-> FUNC
+    REPO -.azd up deploy único.-> APP_FRONT
+    REPO -.azd up deploy único.-> CAPP_BACK
+    REPO -.azd up deploy único.-> CAPP_TICK
+
+    BROWSER -->|carrega bundle estático| APP_FRONT
+    BROWSER -->|POST /chat/rag<br/>Bearer JWT| CAPP_BACK
+    BROWSER -->|GET /tickets/{id}| CAPP_TICK
+    CAPP_BACK -->|proxy autenticado| FUNC
 
     FUNC -->|se anexo imagem| VISION
     FUNC -->|se idioma != pt-BR| TRANS
@@ -179,8 +192,8 @@ flowchart TB
     SEARCH -->|rerank top-5| FUNC
     FUNC -->|augmented prompt| CHAT
     CHAT -->|response| FUNC
-    FUNC -->|response + citations| HS_API
-    HS_API --> BROWSER
+    FUNC -->|response + citations| CAPP_BACK
+    CAPP_BACK -->|JSON suggestion + citations| BROWSER
 
     FUNC -.telemetry.-> AI_INSIGHTS
 ```
@@ -197,8 +210,8 @@ flowchart TB
 | Parte 4 | 30min | Azure AI Translator (multilíngue — sub-feature) |
 | Parte 5 | 40min | Azure AI Search (criar service + schema do index) |
 | Parte 6 | 1h50min | Azure OpenAI deployments (embeddings + chat) + indexar chunks |
-| Parte 7 | 1h | Function App (endpoint `/api/tickets/{id}/suggest`) |
-| Parte 8 | 30min | Plug no stack apex-helpsphere real (Container Apps) |
+| Parte 7 | 1h | Function App `func-helpsphere-rag` (endpoint `/api/tickets/{id}/suggest`) |
+| Parte 8 | 30min | 8 Passos: edita markers + `azd up` + valida 4 hosts no Portal |
 | Parte 9 | 1h | Medição (precision@5, latency, custo) + cleanup |
 
 ---
@@ -1241,6 +1254,8 @@ Query híbrida (BM25 + vector) com filtro:
 
 # Parte 7 — Function App de orquestração (1h)
 
+> Ao final desta Parte você verá esta Function App `func-helpsphere-rag` lado a lado com os 3 hosts do `apex-helpsphere` (App Service frontend + 2 Container Apps backend) no Portal Azure — o panorama completo da arquitetura.
+
 ## Passo 7.1 — Criar Function App
 
 **No Portal Azure:**
@@ -1739,157 +1754,278 @@ Saída esperada:
 
 # Parte 8 — Plug no stack apex-helpsphere real (30min)
 
-> **DEPENDÊNCIA:** Esta Parte 8 assume que o `apex-helpsphere` foi deployed previamente via `azd up` (ver **Pre_Provisionamento_Pre_Aula.md**, Bloco 2). Se você ainda não rodou o `azd up`, faça isso antes de continuar — sem o stack real, não há onde plugar o RAG. Se preferir, pule esta parte e valide o RAG isoladamente via Postman/curl direto na Function App da Parte 7.
+> ✅ **`apex-rag-lab` é fork-funcional único** — este repo já contém o template `apex-helpsphere` completo + Function App de RAG + os 15 arquivos do plug RAG (com `[CRIAR-X]` markers nos 4 arquivos críticos). Workflow: `git clone` → edita **19 linhas marcadas** (5 backend + 14 frontend) → `azd up` reaproveita o RG do Bloco 2 → valida 4 hosts no Portal.
 
-> ✅ **IMPLEMENTAÇÃO CRAVADA (Story 06.10 Lab Inter Parte 8 — PR #20 mergeado 2026-05-09):** Os 3 elementos referenciados nesta Parte 8 estão implementados no template `apex-helpsphere`:
->
-> 1. **Env vars `RAG_ENABLED` / `RAG_FUNCTION_URL` / `RAG_FUNCTION_KEY`** — Bicep params `@secure()` propagados para `appEnvVariables` do Container App backend (Passo 8.2)
-> 2. **Componente `<ChatPanel />` em estado dormente** — `app/frontend/src/components/ChatPanel/` com triple-gate `ragEnabled && enableChat && ?chat=1` (Passo 8.4)
-> 3. **Flag de runtime `?chat=1`** — hook `useChatQueryFlag` em `Shell.tsx` ativa o painel condicional na URL
->
-> **Decisão arquitetural:** o backend expõe um endpoint dedicado `/chat/rag` (proxy para Function App externa de RAG) **separado** do `/chat` upstream nativo do `azure-search-openai-demo` (ChatReadRetrieveReadApproach). Isso preserva ambas as features (RAG do lab + chat nativo) sem conflito de schema. Ver `app/backend/blueprints/rag_chat.py`.
->
-> **Implicação para o aluno:** todos os Passos 8.2-8.4 abaixo funcionam end-to-end no fork. Sem decisão pendente.
+> **Pedagogia:** você NÃO copia o repo `apex-helpsphere` separadamente, NÃO cria branches, NÃO abre PR. O fork de `apex-rag-lab` é o único artefato — é onde Bloco 2 (SaaS base) + Bloco 3 (Lab Inter / RAG) convivem no mesmo `azd env`. Após `azd up`, os 4 hosts (Function App `func-helpsphere-rag` + App Service frontend + 2 Container Apps backend) ficam visíveis lado a lado no Portal — o panorama completo da arquitetura.
 
-## Stack real do apex-helpsphere (atualizado 2026-05)
+## Passo 8.1 — Pré-requisito: Bloco 2 (`azd up`) já concluído
 
-O template apex-helpsphere usa Azure Container Apps (ACA) para os 2 backends e App Service para o frontend estático Vite. As URLs reais que você vai descobrir nesta parte são:
+Esta Parte 8 reaproveita o Resource Group e a infra já provisionada pelo Bloco 2. Antes de continuar, confirme que o stack apex-helpsphere base está deployed.
 
-| Componente | Tipo | Hostname (padrão) |
-|---|---|---|
-| Frontend (Vite bundle estático) | App Service | `https://app-helpsphere-{env}-{token}.azurewebsites.net` |
-| Backend Python (auth + tenants) | Container App ACA | `https://capps-backend-{env}-{token}.{region}.azurecontainerapps.io` |
-| Backend tickets (.NET) | Container App ACA | `https://capps-tickets-{env}-{token}.{region}.azurecontainerapps.io` |
+No diretório raiz do fork `apex-rag-lab` (onde está o `azure.yaml`):
 
-`{env}` = `azd env get-value AZURE_ENV_NAME` (ex.: `helpsphere-actions`)
-`{token}` = `azd env get-value AZURE_RESOURCE_TOKEN` (4 chars, ex.: `w3vk`)
+```bash
+# Descobrir o RG configurado no azd env atual
+azd env get-value AZURE_RESOURCE_GROUP
+# Ex.: rg-helpsphere-actions
 
-## Passo 8.1 — Descobrir URLs reais do seu deployment
-
-No diretório onde você rodou `azd up`:
-
-```powershell
-azd env get-value BACKEND_URI         # URL do Container App backend Python
-azd env get-value TICKETS_BACKEND_URI # URL do Container App tickets .NET
-azd env get-value FRONTEND_URI        # URL do App Service frontend
-azd env get-value AZURE_RESOURCE_GROUP # nome do RG (ex.: rg-helpsphere-actions)
+# Validar que o RG existe e está provisionado
+export RG_HELPSPHERE=$(azd env get-value AZURE_RESOURCE_GROUP)
+az group show --name $RG_HELPSPHERE --query "properties.provisioningState" -o tsv
+# Esperado: Succeeded
 ```
 
-Exporte para variáveis de shell que vamos usar nos próximos passos:
+Se `azd env get-value` não retornar valor, ou se o `az group show` falhar com `ResourceGroupNotFound`, **volte ao Bloco 2** (`Pre_Provisionamento_Pre_Aula.md`) e rode `azd up` antes de continuar — sem o RG do apex-helpsphere base, não há onde plugar o RAG.
+
+Capture as URLs já existentes que vamos usar adiante:
 
 ```bash
 export BACKEND_URI=$(azd env get-value BACKEND_URI)
 export TICKETS_BACKEND_URI=$(azd env get-value TICKETS_BACKEND_URI)
 export FRONTEND_URI=$(azd env get-value FRONTEND_URI)
-export RG_HELPSPHERE=$(azd env get-value AZURE_RESOURCE_GROUP)
 ```
 
-## Passo 8.2 — Configurar env var `RAG_ENABLED=true` no Container App backend
+## Passo 8.2 — Tour dos 15 arquivos do plug RAG no fork
 
-O backend Python do apex-helpsphere já tem ponto de extensão para RAG sob feature flag. Vamos ativar e apontar para a Function App de RAG criada na Parte 7.
-
-**No Portal Azure (Container Apps Configuration):**
-
-1. Barra superior → buscar **"Container Apps"** → clicar
-2. Selecione o Container App backend `capps-backend-{env}-{token}` (do Bloco 2 / apex-helpsphere)
-   - Caso não saiba o nome exato, filtre por Resource Group `$RG_HELPSPHERE` e localize o app cujo nome contém `backend`
-3. Menu lateral → **Settings** → **Containers**
-4. Clique no nome do container backend → tab **Environment variables** → **+ Add**
-5. Adicionar variável `RAG_ENABLED`:
-   - **Name:** `RAG_ENABLED`
-   - **Source:** `Manual entry`
-   - **Value:** `true`
-6. Clique **+ Add** novamente para `RAG_FUNCTION_URL`:
-   - **Name:** `RAG_FUNCTION_URL`
-   - **Source:** `Manual entry`
-   - **Value:** `https://func-helpsphere-rag-{rand}.azurewebsites.net` (URL real da Function App de RAG do Passo 7.x)
-7. Clique **+ Add** novamente para `RAG_FUNCTION_KEY`:
-   - **Name:** `RAG_FUNCTION_KEY`
-   - **Source:** `Manual entry` (em produção, prefira **Reference a secret** apontando para Key Vault)
-   - **Value:** `<sua-function-key-da-Parte-7>`
-8. **Save** → confirma criação de **nova revision** do Container App
-9. Aguardar ~30s até nova revision ficar **Healthy** (Menu lateral → **Revisions and replicas** → ver status)
-
-<!-- screenshot: passo-8.2-container-app-env-portal.png -->
-
-> **Alternativa via Azure CLI:**
->
-> ```bash
-> # URL e key da Function App de RAG (do Passo 7.x)
-> RAG_FUNC_URL="https://func-helpsphere-rag-{rand}.azurewebsites.net"
-> RAG_FUNC_KEY="<sua-function-key-da-Parte-7>"
->
-> # Atualizar env vars do Container App backend
-> az containerapp update `
->   --name capps-backend-{env}-{token} `
->   --resource-group $RG_HELPSPHERE `
->   --set-env-vars `
->     RAG_ENABLED=true `
->     RAG_FUNCTION_URL="$RAG_FUNC_URL" `
->     RAG_FUNCTION_KEY="$RAG_FUNC_KEY"
-> ```
->
-> **Substitua `capps-backend-{env}-{token}`** pelo nome real — descubra com:
-> ```bash
-> az containerapp list -g $RG_HELPSPHERE --query "[?contains(name,'backend')].name" -o tsv
-> ```
-
-> **Auth alternativa via Managed Identity (recomendado em produção):** em vez de `RAG_FUNCTION_KEY`, conceda à MI do Container App backend (clientId `702095d8-…`) a role `Function App Contributor` no recurso da Function App de RAG, e use `DefaultAzureCredential` no código backend para chamar com bearer token. Para o lab, function key é suficiente.
-
-O Container App reinicia automaticamente após `Save` (ou `update --set-env-vars` via CLI) — uma nova revision é criada em ~30s e o tráfego migra automaticamente para ela quando ficar Healthy.
-
-## Passo 8.3 — Testar endpoint `/chat/rag` no backend Container App via curl
-
-Com `RAG_ENABLED=true`, o backend Python expõe `/chat/rag` (proxy dedicado para a Function App de RAG, separado do `/chat` upstream nativo do `azure-search-openai-demo` que continua disponível):
+Antes de editar qualquer linha, abra o fork no VS Code e percorra os 15 arquivos do plug RAG. Treze deles já vêm prontos (referência canônica); apenas 4 contêm marcadores `[CRIAR-X]` que você vai preencher nos próximos passos.
 
 ```bash
-curl -X POST "$BACKEND_URI/chat/rag" `
-  -H "Content-Type: application/json" `
-  -H "Authorization: Bearer <seu-AAD-token>" `
-  -d '{
-    "ticket_id": 4521,
-    "description": "Como reembolsar lojista quando pedido não foi entregue?"
-  }'
+code .   # na raiz do fork apex-rag-lab
 ```
 
-> **Como obter o bearer token:** abra o frontend (`$FRONTEND_URI`) → DevTools → Application → Local Storage → procure chave MSAL com `accessToken`. Ou use `az account get-access-token --resource api://<server-app-id>` se você tem CLI logado com a mesma identidade.
+| # | Arquivo | Camada | Markers `[CRIAR-X]`? | Por que importa |
+|---|---|---|---|---|
+| 1 | `infra/main.bicep` | Bicep | — | Declara params `ragEnabled`, `ragFunctionUrl`, `ragFunctionKey` (`@secure()`) e os propaga ao Container App backend |
+| 2 | `infra/main.parameters.json` | Bicep | — | Mapeia env vars `RAG_*` do `azd env` para os params Bicep |
+| 3 | **`app/backend/blueprints/rag_chat.py`** | Backend Python | **SIM (5 markers)** | Define o endpoint `POST /chat/rag` — gating, validação JWT multi-tenant, proxy para a Function App |
+| 4 | `app/backend/app.py` | Backend Python | — | Registra o blueprint `rag_chat` no Quart app |
+| 5 | `app/backend/blueprints/__init__.py` | Backend Python | — | Expõe `register_rag_blueprint` no namespace de blueprints |
+| 6 | **`app/frontend/src/components/ChatPanel/ChatPanel.tsx`** | Frontend React | **SIM (7 markers)** | Componente flutuante bottom-right com form (ticket + descrição) + render de suggestion + citations |
+| 7 | `app/frontend/src/components/ChatPanel/ChatPanel.module.css` | Frontend CSS | — | Estilo do painel (posição fixa, animações minimize/close) |
+| 8 | `app/frontend/src/components/ChatPanel/index.ts` | Frontend TS | — | Barrel export do componente |
+| 9 | `app/frontend/src/api/rag.ts` | Frontend TS | — | Cliente HTTP do `/chat/rag` (fetch + bearer token MSAL) |
+| 10 | `app/frontend/src/api/index.ts` | Frontend TS | — | Reexporta `rag.ts` no namespace `api` |
+| 11 | **`app/frontend/src/Shell.tsx`** | Frontend React | **SIM (4 markers)** | Hook `useChatQueryFlag` + triple-gate `ragEnabled && enableChat && ?chat=1` + render condicional do `<ChatPanel />` |
+| 12 | **`app/frontend/src/authConfig.ts`** | Frontend TS | **SIM (3 markers)** | Propaga flag `ragEnabled` ao frontend via resposta de `/auth_setup` |
+| 13 | `tests/test_rag_chat.py` | Pytest | — | 256 linhas testando o endpoint proxy (200/401/502/503) |
+| 14 | `CHANGELOG-LAB-INTER.md` | Docs | — | Changelog técnico do Lab Inter — entrada Wave 4 ACTIVE rewrite (Story 06.13) |
+| 15 | `PARA-O-ALUNO-LAB-INTER.md` | Docs | — | Entrypoint pedagógico — surpresa #7 atualizada + workflow Parte 8 (clone único) |
 
-Resposta esperada (~2-3s):
-```json
-{
-  "suggested_response": "Para reembolsar lojista de pedido não entregue, ...",
-  "confidence": 0.84,
-  "citations": [
-    { "source": "azure-openai-overview.pdf", "page": 12 }
-  ]
+> **Como navegar os markers:** abra a aba Search do VS Code (`Ctrl+Shift+F`) e busque pelo texto `[CRIAR-` — os 4 arquivos críticos têm **19 ocorrências** no total (5 + 7 + 4 + 3). Cada marker tem comentário inline explicando o que preencher (descrição + WHY + Hint).
+
+## Passo 8.3 — Editar `app/backend/blueprints/rag_chat.py`
+
+Este arquivo define o endpoint backend `POST /chat/rag` que o frontend chama. Contém **5 markers** cobrindo: extração do `tenant_id` do JWT (multi-tenant safety), leitura do flag `RAG_ENABLED`, gating com 503 didático, construção do upstream endpoint (`/api/tickets/eval/suggest`) e o `aiohttp.session.post` autenticado para a Function App.
+
+Abra `app/backend/blueprints/rag_chat.py` e procure por `[CRIAR-1]` até `[CRIAR-5]`.
+
+Exemplo de marker antes/depois:
+
+```python
+# ANTES (template com marker)
+@bp.post("/chat/rag")
+@auth_required
+async def chat_rag(claims: dict):
+    # [CRIAR-1] Verifique RAG_ENABLED — se false, retorne 503
+    pass
+```
+
+```python
+# DEPOIS (linha preenchida pelo aluno)
+@bp.post("/chat/rag")
+@auth_required
+async def chat_rag(claims: dict):
+    # [CRIAR-1] Verifique RAG_ENABLED — se false, retorne 503
+    if os.environ.get("RAG_ENABLED", "false").lower() != "true":
+        return jsonify({"error": "RAG feature disabled"}), 503
+```
+
+Repita para os demais markers (`[CRIAR-2]` extrai `tenant_id` de `claims`, `[CRIAR-3]` monta o payload upstream, `[CRIAR-4]` faz o `httpx.post` à Function App, `[CRIAR-5]` mapeia a resposta).
+
+> Ao terminar, salve e confira: `grep -c "\[CRIAR-" app/backend/blueprints/rag_chat.py` deve retornar `0` (todos os markers preenchidos — apenas os comentários `# [CRIAR-X]` continuam, mas o código ao lado está cravado).
+
+## Passo 8.4 — Editar `app/frontend/src/components/ChatPanel/ChatPanel.tsx`
+
+Este é o componente React que renderiza o painel flutuante de chat no canto inferior direito. Contém **7 markers** cobrindo: import do cliente HTTP (`ragSuggestApi`), declaração do componente, validação de input (ticketId numérico + descrição não-vazia), chamada à API com JWT (`getToken(instance)`), label condicional do botão durante loading, render do `suggested_response` + confidence e render das citations.
+
+Abra `app/frontend/src/components/ChatPanel/ChatPanel.tsx` e procure por `[CRIAR-1]` até `[CRIAR-8]`.
+
+Exemplo de marker antes/depois:
+
+```tsx
+// ANTES
+export const ChatPanel: React.FC = () => {
+  // [CRIAR-2] State para suggestion, loading, error
+  return null;
+};
+```
+
+```tsx
+// DEPOIS
+export const ChatPanel: React.FC = () => {
+  // [CRIAR-2] State para suggestion, loading, error
+  const [suggestion, setSuggestion] = useState<RagResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // ... resto preenchido nos markers seguintes
+```
+
+Os comentários inline indicam o tipo, o nome de variável e o handler esperado em cada marker. A `module.css` ao lado já contém todos os estilos — você só está plugando lógica e binding.
+
+## Passo 8.5 — Editar `app/frontend/src/Shell.tsx` + `authConfig.ts`
+
+Estes dois arquivos completam o triple-gate `ragEnabled && enableChat && ?chat=1` que decide se o `<ChatPanel />` aparece.
+
+**`Shell.tsx`** (4 markers):
+
+```tsx
+// ANTES
+// [CRIAR-1] Hook useChatQueryFlag (lê ?chat=1 da URL)
+// [CRIAR-2] Triple-gate na render
+return (
+  <Layout>{/* [CRIAR-3] mount condicional do <ChatPanel /> */}</Layout>
+);
+```
+
+```tsx
+// DEPOIS
+// [CRIAR-1] Hook useChatQueryFlag (lê ?chat=1 da URL)
+const chatFlag = useChatQueryFlag();
+// [CRIAR-2] Triple-gate na render
+const showChat = ragEnabled && enableChat && chatFlag;
+return (
+  <Layout>
+    {/* [CRIAR-3] mount condicional do <ChatPanel /> */}
+    {showChat && <ChatPanel />}
+  </Layout>
+);
+```
+
+**`authConfig.ts`** (3 markers):
+
+```ts
+// ANTES
+export interface AuthSetup {
+  // [CRIAR-1] Adicione ragEnabled?: boolean
 }
+// [CRIAR-2] Exporte ragEnabled lido de window.authSetup
 ```
 
-## Passo 8.4 — Validar no frontend (botão "Sugerir resposta" / chat dormente)
+```ts
+// DEPOIS
+export interface AuthSetup {
+  // [CRIAR-1] Adicione ragEnabled?: boolean
+  ragEnabled?: boolean;
+}
+// [CRIAR-2] Exporte ragEnabled lido de window.authSetup
+export const ragEnabled: boolean = (window as any).authSetup?.ragEnabled ?? false;
+```
 
-O frontend Vite do apex-helpsphere já contém o componente `<ChatPanel />` em estado dormente (escondido por flag UI — ver `feedback_first_run_gotchas` na MEMORY do projeto). Para ativar:
+Os markers restantes (`[CRIAR-3]` em diante) propagam a flag em pontos pontuais — siga os comentários inline.
 
-**Opção A — Via flag de runtime (preferida):**
-1. Abrir `$FRONTEND_URI` no navegador
-2. Login com sua conta Entra
-3. Adicionar `?chat=1` à URL: `https://app-helpsphere-{env}-{token}.azurewebsites.net/?chat=1`
-4. O painel de chat aparece no canto inferior direito
-5. Selecionar um ticket → clicar em **"Sugerir resposta"** → painel mostra sugestão + citações em ~2-3s
+## Passo 8.6 — Configurar env vars do RAG no `azd env`
 
-**Opção B — Tornar `<ChatPanel />` permanente (sem flag `?chat=1`):**
-1. No fork do `apex-helpsphere`, edite `app/frontend/src/Shell.tsx` e remova a condição `useChatQueryFlag()` do mount do `<ChatPanel />` — mantenha apenas `ragEnabled && enableChat`
-2. `npm run build` no diretório `app/frontend/`
-3. Re-deploy: `azd deploy frontend`
+Antes de redeployar, exponha ao stack as 4 env vars que controlam o plug RAG. Use os valores capturados ao final da Parte 7 (URL e key da Function App `func-helpsphere-rag` + a flag mestra).
 
-> **Implementação cravada (Story 06.10 Lab Inter Parte 8):** o template `apex-helpsphere` agora inclui `RAG_ENABLED` env var (Bicep + appsettings + frontend env), endpoint backend `/chat/rag` com proxy multi-tenant, e componente `<ChatPanel />` flutuante com triple-gate `ragEnabled && enableChat && ?chat=1`. Ver PR #20 mergeado em main.
+```bash
+azd env set RAG_FUNCTION_URL "https://func-helpsphere-rag-{rand}.azurewebsites.net"
+azd env set RAG_FUNCTION_KEY "<sua-function-key-da-Parte-7>"
+azd env set ENABLE_CHAT "true"
+azd env set RAG_ENABLED "true"
+```
+
+| Env var | Onde é consumida | Notas |
+|---|---|---|
+| `RAG_FUNCTION_URL` | Bicep param `ragFunctionUrl` → env var do Container App backend | URL do Passo 7.6 |
+| `RAG_FUNCTION_KEY` | Bicep param `ragFunctionKey` (`@secure()`) → env var do Container App backend | Key do Passo 7.7 |
+| `ENABLE_CHAT` | Frontend `enableChat` (segunda perna do triple-gate) | Permite uso do painel |
+| `RAG_ENABLED` | Backend gating (`rag_chat.py` Passo 8.3) + frontend `ragEnabled` (primeira perna) | Mestre on/off do plug RAG |
+
+Confirme:
+
+```bash
+azd env get-values | grep -E "RAG_|ENABLE_CHAT"
+```
+
+## Passo 8.7 — `azd up` (deploy completo do fork)
+
+Com os 4 arquivos editados e as env vars setadas, faça o redeploy do stack inteiro a partir da raiz do fork:
+
+```bash
+azd up
+```
+
+O `azd up` reaproveita o RG do Bloco 2 (`$RG_HELPSPHERE`) e atualiza tudo em uma única invocação:
+
+1. **Bicep `infra/main.bicep`** — propaga `ragEnabled`/`ragFunctionUrl`/`ragFunctionKey` ao `appEnvVariables` do `capps-backend-{env}` (deploy condicional só se houve mudança em params)
+2. **Container App backend Python (`capps-backend-{env}`)** — rebuild da imagem com `rag_chat.py` registrado, push para ACR, nova revision
+3. **Container App tickets .NET (`capps-tickets-{env}`)** — rebuild apenas se houve mudança no código (provavelmente skip)
+4. **App Service frontend (`app-helpsphere-{env}`)** — rebuild Vite com `ChatPanel.tsx` + `Shell.tsx` + `authConfig.ts` + `rag.ts`, upload do bundle estático
+
+Tempo estimado total: **6-10min** (depende da camada de cache Docker e do tamanho do bundle Vite).
+
+> **Troubleshooting comum:**
+> - **`The resource name X is already in use`** — colisão de nome global (Storage, ACR, Function App). Rode `azd env new <novo-nome>` e tente novamente OU edite `infra/main.bicep` para usar `uniqueString(resourceGroup().id)` no token.
+> - **`SubscriptionLimitReached`** — quota de Container Apps por região atingida. Use região alternativa ou solicite quota.
+> - **`ImagePullBackOff` na nova revision** — ACR auth pendente. Aguarde ~2min e dê `az containerapp revision restart -n capps-backend-{env} -g $RG_HELPSPHERE --revision <nome>`.
+
+## Passo 8.8 — Validação 4 hosts no Portal + smoke teste end-to-end
+
+Com o `azd up` retornando `SUCCESS`, abra **4 abas no Portal Azure lado a lado** para validar visualmente que todos os hosts da arquitetura estão saudáveis.
+
+**Aba 1 — Function App `func-helpsphere-rag` (RG `rg-lab-intermediario`)**
+- Portal → Function Apps → `func-helpsphere-rag-{rand}`
+- **Overview:** Status = **Running** · State = **Running**
+- **Functions:** lista contém `suggest` (a função do Passo 7.5)
+- **Application Insights → Live Metrics:** confirma 0 falhas recentes
+
+**Aba 2 — App Service `app-helpsphere-{env}` (RG `$RG_HELPSPHERE`)**
+- Portal → App Services → `app-helpsphere-{env}-{token}`
+- **Overview:** Status = **Running** · URL = `$FRONTEND_URI`
+- **Deployment Center:** último deploy = `Success` (timestamp do `azd up`)
+
+**Aba 3 — Container App `capps-backend-{env}` (RG `$RG_HELPSPHERE`)**
+- Portal → Container Apps → `capps-backend-{env}-{token}`
+- **Overview:** Provisioning state = **Succeeded** · Running status = **Running**
+- **Revisions and replicas:** revision mais recente é **Active** com 100% do tráfego e status **Healthy**
+- **Containers → Environment variables:** confirma `RAG_ENABLED=true`, `RAG_FUNCTION_URL=https://func-helpsphere-rag-...`, `RAG_FUNCTION_KEY=*** (secret)`
+- **Log stream:** procure linha `Blueprint rag_chat registered` no startup
+
+**Aba 4 — Container App `capps-tickets-{env}` (RG `$RG_HELPSPHERE`)**
+- Portal → Container Apps → `capps-tickets-{env}-{token}`
+- **Overview:** Provisioning state = **Succeeded** · Running status = **Running**
+- **Revisions and replicas:** revision Active e Healthy
+
+<!-- screenshot: passo-8.8-portal-4-abas-lado-a-lado.png -->
+
+Com os 4 hosts confirmados saudáveis, faça o **smoke teste end-to-end** no navegador:
+
+1. Abra `$FRONTEND_URI/?chat=1` em uma aba normal (não anônima — precisa do MSAL cache)
+2. Login com sua conta Entra (mesma usada no Bloco 2)
+3. Aguarde a tela principal de tickets carregar
+4. Confirme que o `<ChatPanel />` aparece no canto inferior direito (se não aparecer, abra DevTools → Console → procure erro `ragEnabled=false` ou `enableChat=false`)
+5. Selecione um ticket da lista
+6. Clique no botão **"Sugerir resposta"** dentro do painel
+7. Aguarde **~2-3s** — o painel deve mostrar:
+   - **Suggestion:** texto em pt-BR com a resposta sugerida
+   - **Confidence:** valor entre 0.0 e 1.0
+   - **Citations:** lista de fontes (ex.: `azure-openai-overview.pdf`, página X)
+
+Se a resposta vier em <3s com citações plausíveis, o pipeline RAG end-to-end (Frontend Vite → Container App backend `/chat/rag` → Function App `func-helpsphere-rag` → AOAI + AI Search) está funcional.
+
+> **Troubleshooting do smoke:**
+> - **`<ChatPanel />` não aparece:** `?chat=1` ausente OU `ragEnabled=false` no `/auth_setup` (ver Passo 8.5 `authConfig.ts`) OU `ENABLE_CHAT=false` (ver Passo 8.6).
+> - **`502 Bad Gateway` no `/chat/rag`:** Function App `func-helpsphere-rag` está parada ou key errada — confira no Container App `capps-backend` env vars.
+> - **`401 Unauthorized` no `/chat/rag`:** bearer token expirou — F5 no frontend para renovar via MSAL silent refresh.
 
 ## ✅ Checkpoint Parte 8
 
-- [ ] `azd env get-value BACKEND_URI` retorna URL `capps-backend-…containerapps.io`
-- [ ] `RAG_ENABLED=true` configurado no Container App backend (verificar com `az containerapp show … --query properties.template.containers[0].env`)
-- [ ] `curl POST $BACKEND_URI/chat/rag` retorna sugestão JSON com citações
-- [ ] Frontend com `?chat=1` exibe painel de chat funcional
-- [ ] Latency end-to-end (frontend → backend → Function RAG → AOAI) < 3s
+- [ ] `azd env get-value AZURE_RESOURCE_GROUP` retorna o RG do Bloco 2
+- [ ] 4 arquivos críticos editados (todos os markers `[CRIAR-X]` preenchidos): `rag_chat.py`, `ChatPanel.tsx`, `Shell.tsx`, `authConfig.ts`
+- [ ] `azd up` concluiu com `SUCCESS` sem erros
+- [ ] 4 abas no Portal mostram todos os hosts em estado **Healthy/Running**: Function App `func-helpsphere-rag` + App Service `app-helpsphere-{env}` + Container App `capps-backend-{env}` + Container App `capps-tickets-{env}`
+- [ ] `$FRONTEND_URI/?chat=1` exibe o `<ChatPanel />` no canto inferior direito
+- [ ] Botão **"Sugerir resposta"** retorna sugestão + citações em < 3s
 
 ---
 

@@ -61,6 +61,13 @@ interface AuthSetup {
     // Bicep `ragEnabled=true` apos a Function App de RAG ser provisionada
     // (Parte 7 do guia). Frontend usa para montar <ChatPanel /> quando
     // `?chat=1` esta presente na URL.
+    // [CRIAR-X 1]: adicionar campo opcional ragEnabled na interface AuthSetup
+    // WHY: backend Wave 4 propaga essa flag em /auth_setup lendo a env
+    // RAG_ENABLED do Container App. Sem este campo no contrato TypeScript, o
+    // export `ragEnabled` abaixo nao compila (Property 'ragEnabled' does not
+    // exist on type 'AuthSetup'). Mantenha opcional (?) — backend antigo nao
+    // envia, e undefined deve coagir para false no export.
+    // Hint: tipo `boolean` com `?` (opcional). Ex: `ragEnabled?: boolean;`
     ragEnabled?: boolean;
 }
 
@@ -93,6 +100,21 @@ export const enableChat = authSetup.enableChat === true;
 // /auth_setup (lido de env RAG_ENABLED). Default false — RAG ChatPanel é
 // ativado por (a) `ragEnabled=true` no Bicep + Function App de RAG provisionada
 // (Parte 7 do guia) AND (b) usuário adicionar `?chat=1` na URL (Parte 8 Opção A).
+// [CRIAR-X 2]: comentário pedagógico — gating duplo do RAG ChatPanel
+// WHY: o ChatPanel só monta quando DUAS condicoes simultaneas sao verdadeiras:
+//   (a) Bicep param `ragEnabled=true` ativa env RAG_ENABLED no Container App,
+//       e o backend Python /auth_setup propaga `ragEnabled: true` no JSON;
+//   (b) usuario adiciona `?chat=1` na URL — Shell.tsx le o query string e
+//       monta <ChatPanel /> apenas se ambos forem true (gate cliente).
+// Esse padrao "infra-gate + URL-gate" evita que o chat apareça por engano em
+// produção (ex: alguem provisiona RAG mas nao quer expor no menu principal).
+// Hint: este e um marker so de comentario — nao mexe em codigo, so educa.
+// [CRIAR-X 3]: exportar ragEnabled como boolean estrito (=== true)
+// WHY: usar `=== true` em vez de truthy (`!!` ou implicit cast) protege contra
+// backend retornar `"true"` (string) em vez de `true` (boolean) — bug real ja
+// observado em deploys onde env vars do Container App vem sempre como string.
+// Comparacao estrita garante: somente boolean true autentico ativa o ChatPanel.
+// Hint: `export const ragEnabled = authSetup.ragEnabled === true;`
 export const ragEnabled = authSetup.ragEnabled === true;
 
 /**

@@ -20,6 +20,8 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useMsal } from "@azure/msal-react";
 
+// [CRIAR-X 1]: importar o cliente HTTP do endpoint /chat/rag — sem este import o submit não consegue chamar o backend Python (Function App rota POST /chat/rag).
+// Hint: import { ragSuggestApi, RagSuggestResponse } from "../../api/rag";
 import { ragSuggestApi, RagSuggestResponse } from "../../api/rag";
 import { getToken, useLogin } from "../../authConfig";
 
@@ -38,6 +40,8 @@ interface RagResultState {
 
 const INITIAL_RESULT: RagResultState = { response: null, error: null, loading: false };
 
+// [CRIAR-X 2]: declarar o componente como named export (consumido por Shell.tsx via `import { ChatPanel }`). Recebe prop `onClose` para fechar o painel via toggle ?chat=1 do Shell.
+// Hint: export const ChatPanel = ({ onClose }: Props) => { ... };
 export const ChatPanel = ({ onClose }: Props) => {
     const { instance } = useMsal();
 
@@ -59,6 +63,8 @@ export const ChatPanel = ({ onClose }: Props) => {
         async (event: FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             const ticketIdNum = Number(ticketId);
+            // [CRIAR-X 3]: validar entrada antes de chamar API — ticket_id deve ser número positivo finito e descrição não pode ser vazia/whitespace. Falha aqui evita 400 do backend e dá feedback imediato (UX < 50ms vs ~2-3s de roundtrip RAG).
+            // Hint: use Number.isFinite(ticketIdNum) && ticketIdNum > 0; depois description.trim() !== ""
             if (!Number.isFinite(ticketIdNum) || ticketIdNum <= 0) {
                 setResult({ response: null, error: "Informe um ticket_id numérico válido (> 0).", loading: false });
                 return;
@@ -78,6 +84,8 @@ export const ChatPanel = ({ onClose }: Props) => {
             setResult({ response: null, error: null, loading: true });
             try {
                 const idToken = useLogin ? await getToken(instance) : undefined;
+                // [CRIAR-X 4]: chamar o endpoint /chat/rag passando ticket_id, descrição, idToken (JWT do MSAL via getToken) e signal de abort. A resposta RagSuggestResponse traz suggested_response + confidence + citations (saída end-to-end do pipeline RAG: AI Search → embeddings → GPT).
+                // Hint: const response = await ragSuggestApi({ticketId, description}, idToken, controller.signal);
                 const response = await ragSuggestApi(
                     {
                         ticketId: ticketIdNum,
@@ -171,6 +179,8 @@ export const ChatPanel = ({ onClose }: Props) => {
                     />
                 </label>
                 <button type="submit" className={styles.submit} disabled={result.loading}>
+                    {/* [CRIAR-X 5]: label do botão muda durante loading — UX fundamental para aluno entender que requisição está em flight (~2-3s do roundtrip RAG). Sem feedback visual aluno clica de novo e gera duplicate request. */}
+                    {/* Hint: {result.loading ? "Consultando RAG…" : "Sugerir resposta"} */}
                     {result.loading ? "Consultando RAG…" : "Sugerir resposta"}
                 </button>
             </form>
@@ -182,12 +192,16 @@ export const ChatPanel = ({ onClose }: Props) => {
             )}
             {result.response && (
                 <div className={styles.resultBox}>
+                    {/* [CRIAR-X 6]: exibir suggested_response (texto gerado pelo GPT) + confidence convertido para percentual. Esta é a saída visível do RAG end-to-end — o que aluno demonstra funcionando no checkpoint da Parte 8. */}
+                    {/* Hint: <p>{result.response.suggested_response}</p> e {(result.response.confidence * 100).toFixed(0)}% */}
                     <p className={styles.resultText}>{result.response.suggested_response}</p>
                     {typeof result.response.confidence === "number" && (
                         <p className={styles.confidence}>
                             Confiança: <strong>{(result.response.confidence * 100).toFixed(0)}%</strong>
                         </p>
                     )}
+                    {/* [CRIAR-X 7]: exibir as citations (source PDF + página opcional) — fundamentais para confiabilidade do RAG (aluno vê de onde a resposta veio, evitando hallucination). Sem citations visíveis o RAG vira "magic chatbot" e perde valor pedagógico. */}
+                    {/* Hint: result.response.citations.map((c, idx) => <li>{c.source} · pág. {c.page}</li>) */}
                     {result.response.citations && result.response.citations.length > 0 && (
                         <ul className={styles.citations} aria-label="Citações">
                             {result.response.citations.map((c, idx) => (

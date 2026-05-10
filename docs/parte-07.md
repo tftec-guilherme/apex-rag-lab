@@ -1,6 +1,6 @@
 # Parte 7 — Function App de orquestração (1h)
 
-> Cria a Function App Python, configura Application Insights + Managed Identity + env vars, faz deploy do código `function_app.py` e testa o endpoint `/chat/rag` com Postman.
+> Cria a Function App Python, configura Application Insights + Managed Identity + env vars, faz deploy do código `function_app.py` e testa o endpoint `/chat/rag` com Postman. Ao final você verá esta Function App lado a lado com os 3 hosts do `apex-helpsphere` (App Service + 2 Container Apps) no Portal Azure.
 
 📘 **Conteúdo completo:** [`00-guia-completo.md` — seção "Parte 7"](./00-guia-completo.md#parte-7--function-app-de-orquestra%C3%A7%C3%A3o-1h)
 

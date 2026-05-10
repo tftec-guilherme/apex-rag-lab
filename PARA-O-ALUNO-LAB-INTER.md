@@ -56,6 +56,39 @@ Se algum item está vermelho, pare aqui — execute primeiro a Pré-aula 0 + Blo
 
 ---
 
+## 🔧 Workflow Parte 8 (clone único)
+
+A Parte 8 do guia segue um workflow simplificado: **um único `git clone` deste repo (`apex-rag-lab`)** + edição de ~19 marcadores `[CRIAR-X]` em 4 arquivos críticos + `azd up` reaproveitando o RG do Bloco 2.
+
+```bash
+# 1. Clone único do fork-funcional canônico
+git clone https://github.com/<seu-fork>/apex-rag-lab.git
+cd apex-rag-lab
+
+# 2. Edita 4 arquivos críticos (siga as instruções dos Passos 8.3-8.5 do guia)
+#    - app/backend/blueprints/rag_chat.py        (5 markers)
+#    - app/frontend/src/components/ChatPanel/ChatPanel.tsx  (7 markers)
+#    - app/frontend/src/Shell.tsx                (4 markers)
+#    - app/frontend/src/authConfig.ts            (3 markers)
+
+# 3. Apontar para a Function App de RAG da Parte 7
+azd env set RAG_FUNCTION_URL "<URL-da-Parte-7>"
+azd env set RAG_FUNCTION_KEY "<key-da-Parte-7>"
+azd env set RAG_ENABLED true
+azd env set ENABLE_CHAT true
+
+# 4. Deploy completo (reaproveita RG do Bloco 2)
+azd up
+
+# 5. Validar 4 hosts no Portal + smoke teste em ?chat=1
+```
+
+**Por que clone único?** Esta disciplina é de IA, não DevOps. Workflows com fork separado de `apex-helpsphere`, branches `feature/`, PR pra main, sync upstream — atrapalham o foco em Azure AI services. O `apex-rag-lab` é o fork-funcional canônico que já contém o template `apex-helpsphere` completo + Function App de RAG + os 15 arquivos do plug.
+
+**Por que `azd up` reaproveita o RG?** O `azd env` deste fork já está apontado para o RG `rg-helpsphere-{env}` provisionado no Bloco 2. O `azd up` faz upgrade in-place dos recursos (Bicep deltas) sem criar RG novo. Custo zero adicional além dos R$ 21-29 do RG já provisionado.
+
+---
+
 ## ⚠️ 7 surpresas pedagógicas (gotchas reais do lab)
 
 ### #1 — Free Trial não funciona
@@ -82,9 +115,11 @@ Após `az role assignment create`, espere 30-60s antes de testar. Se rodar o scr
 
 R$ 250/mês (R$ 8,30/dia). Se esquecer ligado o fim de semana, são R$ 16. Se esquecer um mês, são R$ 250. Por isso a regra de ouro é deletar o RG inteiro ao final.
 
-### #7 — Parte 8 depende de implementação no apex-helpsphere
+### #7 — Parte 8 reaproveita o template completo (sem fork separado)
 
-A Parte 8 plugga o RAG no apex-helpsphere via env var `RAG_ENABLED=true`, endpoint `/chat/rag` no backend e ChatPanel no frontend. Em [Q2-2026], 3 elementos podem ainda não estar implementados no template `apex-helpsphere`. Se chegar na Parte 8 e o frontend não responder, cheque `apex-helpsphere/CHANGELOG.md` para confirmar que está em versão ≥v2.2.0+ que tem RAG enabled. Caso esteja em v2.1.0, a Parte 8 fica em modo **simulado** via curl direto na Function App (Parte 7 cobre).
+Anteriormente a Parte 8 dependia do template `apex-helpsphere` ter PR #20 mergeado em main (com env vars `RAG_ENABLED`, endpoint `/chat/rag`, ChatPanel React). Esse PR foi **revertido** em 2026-05-08 — o `apex-helpsphere/main` não tem mais código RAG.
+
+A nova realidade: **o `apex-rag-lab` é fork-funcional único** que contém TUDO (template `apex-helpsphere` espelhado + Function App de RAG da Parte 7 + 15 arquivos do plug com `[CRIAR-X]` markers nos 4 arquivos críticos). Você faz UM clone deste repo, edita ~19 linhas marcadas, e roda `azd up`. Sem fork separado de `apex-helpsphere`, sem branches, sem PRs.
 
 ---
 

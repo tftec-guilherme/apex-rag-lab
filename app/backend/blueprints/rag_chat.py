@@ -62,6 +62,12 @@ def _resolve_tenant_id(auth_claims: dict[str, Any]) -> str:
     Mesma logica de blueprints/tickets.py::_resolve_tenant_id. Duplicada aqui
     para manter o blueprint independente.
     """
+    # [CRIAR-X 1]: extrair o claim multi-tenant do JWT — sem isso o backend nao
+    # diferencia tenants e VAZA DADOS entre clientes Apex Group (falha critica
+    # de seguranca multi-tenant). O claim e injetado pelo Entra App Registration
+    # como Directory Extension `app_tenant_id` (Optional Claim no token v2).
+    # Hint: tente "app_tenant_id" primeiro, depois "extn.app_tenant_id" (forma
+    # alternativa que algumas versoes do Entra ID emitem).
     tenant_id = auth_claims.get("app_tenant_id") or auth_claims.get("extn.app_tenant_id")
     if not tenant_id:
         for key, value in auth_claims.items():
@@ -83,6 +89,11 @@ def _resolve_tenant_id(auth_claims: dict[str, Any]) -> str:
 
 def _rag_enabled() -> bool:
     """Le RAG_ENABLED do env. Lookup por request - permite toggle sem restart."""
+    # [CRIAR-X 2]: ler RAG_ENABLED do environment — se False, o endpoint retorna
+    # 503 didatico apontando o aluno para a Parte 8 do guia. Lookup por request
+    # (nao em tempo de import) permite toggle do flag SEM restart do Container App.
+    # Hint: use os.environ.get("RAG_ENABLED", "false") com default "false"
+    # (segurar fechado por padrao) e compare em lowercase com "true".
     return os.environ.get("RAG_ENABLED", "false").lower() == "true"
 
 
@@ -96,6 +107,12 @@ async def chat_rag(auth_claims: dict[str, Any]):
     Function App sao propagados como 502 (bad gateway upstream) com payload
     descritivo. Timeout de 30s no upstream call.
     """
+    # [CRIAR-X 3]: gating check — bloqueia chamadas quando o flag RAG_ENABLED
+    # esta off, retornando payload PEDAGOGICO que ensina o aluno o que falta
+    # configurar (RAG_FUNCTION_URL/KEY) e aponta para a Parte 8 do guia. Sem
+    # este gate, requisicoes vazariam para a Function App ainda nao criada
+    # e o aluno veria 500 generico em vez de mensagem didatica.
+    # Hint: chame _rag_enabled() e retorne tuple (jsonify({...}), 503).
     if not _rag_enabled():
         return (
             jsonify(
@@ -144,6 +161,11 @@ async def chat_rag(auth_claims: dict[str, Any]):
             500,
         )
 
+    # [CRIAR-X 4]: construir o endpoint da Function App de RAG que sera invocada.
+    # O caminho `/api/tickets/eval/suggest` e CRAVADO pelo function_app.py do
+    # snippets/ (Parte 7 do Lab) — mudar este path quebra o contrato. NAO confundir
+    # com /chat/rag, que e o endpoint DESTE backend (proxy fino que voce esta lendo).
+    # Hint: use f-string concatenando rag_url + "/api/tickets/eval/suggest".
     upstream_endpoint = f"{rag_url}/api/tickets/eval/suggest"
     headers = {"Content-Type": "application/json"}
     if rag_key:
@@ -158,6 +180,12 @@ async def chat_rag(auth_claims: dict[str, Any]):
     timeout = aiohttp.ClientTimeout(total=30)
     try:
         async with aiohttp.ClientSession(timeout=timeout) as session:
+            # [CRIAR-X 5]: POST autenticado para a Function App de RAG. O header
+            # x-functions-key (montado acima a partir de RAG_FUNCTION_KEY) autentica
+            # a chamada na Function App. Timeout de 30s ja foi configurado no
+            # ClientSession para evitar pendurar a requisicao em caso de cold start
+            # da Function (primeiro request pos-deploy pode levar ~10-20s).
+            # Hint: use session.post(upstream_endpoint, json=payload, headers=headers).
             async with session.post(upstream_endpoint, json=payload, headers=headers) as response:
                 response_text = await response.text()
                 if response.status >= 400:
