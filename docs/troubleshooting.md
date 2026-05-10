@@ -10,9 +10,8 @@
 # 1. Login OK?
 az account show
 
-# 2. RGs corretos existem?
+# 2. RG do lab existe?
 az group show --name rg-lab-intermediario
-az group show --name rg-helpsphere-ia
 
 # 3. Storage acessível?
 az storage container list --account-name stlabinter{rand} --auth-mode login
@@ -24,7 +23,7 @@ az cognitiveservices account show --name di-helpsphere-rag --resource-group rg-l
 az search service show --name srch-helpsphere-rag --resource-group rg-lab-intermediario
 
 # 6. Foundry Project existe?
-az ml workspace show --name aifproj-helpsphere-rag --resource-group rg-helpsphere-ia 2>/dev/null || echo "use Foundry portal ai.azure.com"
+az ml workspace show --name aifproj-helpsphere-rag --resource-group rg-lab-intermediario 2>/dev/null || echo "use Foundry portal ai.azure.com"
 
 # 7. Function App rodando?
 az functionapp show --name func-helpsphere-rag --resource-group rg-lab-intermediario --query "state"
@@ -86,7 +85,7 @@ curl -X POST "https://func-helpsphere-rag.azurewebsites.net/api/chat/rag" \
 
 **Fix:**
 1. `az account show` — confirme que está na sub correta
-2. `az group show --name rg-helpsphere-ia` — confirme que o RG existe
+2. `az group show --name rg-lab-intermediario` — confirme que o RG existe
 3. Se não existe, volte e execute o Bloco 2 inteiro antes de continuar com Lab Inter
 
 ---

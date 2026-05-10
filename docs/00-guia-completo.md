@@ -37,7 +37,7 @@
 
 ## Pré-requisitos
 
-- ✅ Bloco 2 concluído — `rg-helpsphere-ia` existindo com Foundry Hub e Project criados
+- ✅ Bloco 2 concluído — `rg-lab-intermediario` existindo com Foundry Hub e Project criados
 - ✅ Quota Azure OpenAI aprovada na sua subscription com pelo menos 30K TPM para `text-embedding-3-large` e 30K TPM para `gpt-4.1-mini`
 - ✅ Subscription Pay-As-You-Go (não Free Trial)
 - ✅ Cartão de crédito internacional vinculado
@@ -122,7 +122,7 @@ export DI_KEY="<sua-key>"
 | Azure AI Translator | `tr-helpsphere-rag` | S1 (Standard) | pago por uso | R$ 1 |
 | Function App | `func-helpsphere-rag` | Consumption (Y1) | gratuito (1M exec/mês) | desprezível |
 | Application Insights | `ai-helpsphere-rag` | Workspace-based | ~R$ 5 | R$ 1-3 |
-| Managed Identity | `mi-helpsphere-ia` | criada no Passo 1.5 (RG `rg-helpsphere-ia`) | gratuito | — |
+| Managed Identity | `mi-helpsphere-ia` | criada no Passo 1.5 (RG `rg-lab-intermediario`) | gratuito | — |
 | **Total** | | | **~R$ 270/mês ligado** | **R$ 21-29 lab realista** |
 
 ---
@@ -164,7 +164,7 @@ flowchart TB
         AI_INSIGHTS[Application Insights<br/>ai-helpsphere-rag]
     end
 
-    subgraph Helpsphere["Stack apex-helpsphere (Bloco 2 — RG rg-helpsphere-{env})"]
+    subgraph Helpsphere["Stack apex-helpsphere (Bloco 2 — RG rg-helpsphere-saas)"]
         APP_FRONT["App Service<br/>app-helpsphere-{env}<br/>Vite static frontend"]
         CAPP_BACK["Container App<br/>capps-backend-{env}<br/>Python — endpoint /chat/rag"]
         CAPP_TICK["Container App<br/>capps-tickets-{env}<br/>.NET tickets API"]
@@ -375,14 +375,14 @@ Você deve ver os 3 arquivos PDF listados.
 
 ## Passo 1.5 — Criar Managed Identity (cross-block)
 
-A `mi-helpsphere-ia` é uma **User-assigned Managed Identity** criada no Resource Group da família IA (`rg-helpsphere-ia` do Bloco 2). Vai ser referenciada por todos os recursos deste lab (Storage, AI Search, Function App) — fica fora do `rg-lab-intermediario` propositalmente: assim sobrevive ao `az group delete rg-lab-intermediario` no cleanup e fica disponível para os Labs Final e Avançado.
+A `mi-helpsphere-ia` é uma **User-assigned Managed Identity** criada dentro do `rg-lab-intermediario`. Vai ser referenciada por todos os recursos deste lab (Storage, AI Search, Function App). No cleanup final (Parte 9), ela é deletada junto com o RG — se for fazer o Lab Final em sequência **no mesmo dia**, mantenha o `rg-lab-intermediario` rodando para reusar a MI e o Foundry Hub.
 
 ```powershell
 # Criar a MI usando a mesma location do RG da família IA
 az identity create `
   --name mi-helpsphere-ia `
-  --resource-group rg-helpsphere-ia `
-  --location $(az group show --name rg-helpsphere-ia --query location -o tsv)
+  --resource-group rg-lab-intermediario `
+  --location $(az group show --name rg-lab-intermediario --query location -o tsv)
 ```
 
 Validar e capturar identifiers:
@@ -390,7 +390,7 @@ Validar e capturar identifiers:
 ```powershell
 az identity show `
   --name mi-helpsphere-ia `
-  --resource-group rg-helpsphere-ia `
+  --resource-group rg-lab-intermediario `
   --query "{principalId:principalId, clientId:clientId}"
 ```
 
@@ -403,7 +403,7 @@ Anote `principalId` e `clientId`. O `mi-helpsphere-ia` vai ser referenciado por 
 ```powershell
 $env:PRINCIPAL_ID = (az identity show `
   --name mi-helpsphere-ia `
-  --resource-group rg-helpsphere-ia `
+  --resource-group rg-lab-intermediario `
   --query principalId -o tsv)
 
 $env:STORAGE_ID = (az storage account show `
@@ -2233,20 +2233,19 @@ Erros comuns durante o Lab Intermediário e como resolver. Consulte **antes** de
 
 ---
 
-## Passo 9.4 — Cleanup OPCIONAL
+## Passo 9.4 — Cleanup OBRIGATÓRIO
 
-> **Decisão de cleanup depende do seu plano:**
+> **Decisão de cleanup:** todos os recursos do Lab Inter (Storage, MI, Document Intelligence, Vision, Translator, AI Search S1, OpenAI, Function App, Foundry Hub `aifhub-apex-prod`) estão consolidados em `rg-lab-intermediario` (eastus2). Deletando o RG, você zera o consumo deste lab.
 >
-> - **Vai fazer Lab Final em sequência?** → **MANTENHA** `rg-helpsphere-ia` rodando — Lab Final reusa este RG (Foundry Hub, AI Search, OpenAI já estão lá). Você só vai pagar uma vez pela infra de IA.
+> - **Vai fazer Lab Final em sequência (mesmo dia)?** → **MANTENHA** `rg-lab-intermediario` rodando — Lab Final reusa Foundry Hub, AI Search e OpenAI deste RG. Você paga uma vez pela infra de IA.
 > - **Terminou D06 por hoje?** → execute o cleanup abaixo. **NÃO esqueça** — IA stack ativa custa muito.
 
 ```powershell
-az group delete --name rg-helpsphere-ia --yes --no-wait
 az group delete --name rg-lab-intermediario --yes --no-wait
 echo "Lab Intermediario cleanup iniciado"
 ```
 
-> **CUSTO se esquecer ligado:** ~**R$ 80-120/mês** com IA stack ativa (AI Search S1 sozinho = R$ 250/mês; foi removido por estar em `rg-lab-intermediario`, mas Foundry Hub + Storage + Log Analytics em `rg-helpsphere-ia` ainda somam R$ 80-120/mês). **NÃO esqueça.**
+> **CUSTO se esquecer ligado:** ~**R$ 280-320/mês** com IA stack ativa (AI Search S1 sozinho = R$ 250/mês; Foundry Hub + Storage + Log Analytics + OpenAI deployments somam +R$ 30-70/mês). **NÃO esqueça.**
 
 Verificar em ~3-5min:
 ```powershell
@@ -2254,7 +2253,7 @@ az group exists --name rg-lab-intermediario
 # false = deletado com sucesso
 ```
 
-> **Atenção:** o `rg-helpsphere-ia` (Bloco 2) **persiste por padrão** se você não rodou o `az group delete` acima — só delete ao final dos 3 labs ou ao final do dia. O `rg-helpsphere-saas` (HelpSphere demo provisionado via `azd up`) também persiste.
+> **Atenção:** o `rg-helpsphere-saas` (HelpSphere SaaS produção provisionado via `azd up`) **persiste por padrão** — é a stack SaaS da Apex Group em `westus3` e NÃO deve ser deletada com o lab.
 
 ## ✅ Checkpoint final do Lab Intermediário
 

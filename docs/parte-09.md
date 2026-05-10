@@ -22,7 +22,7 @@ az group delete --name rg-lab-intermediario --yes --no-wait
 ```
 
 6. **Confirmar** que `rg-lab-intermediario` sumiu (`az group list --query "[?name=='rg-lab-intermediario']"`)
-7. **Manter** `rg-helpsphere-ia` (do Bloco 2) — outros 2 labs (Final + Avançado) também usam
+7. **Manter** `rg-helpsphere-saas` rodando — é a stack SaaS produção da Apex (`westus3`) e NÃO deve ser deletada com o lab
 
 ## Pré-requisitos
 

@@ -31,6 +31,6 @@ Navegação do conteúdo do lab. Source of truth: [`00-guia-completo.md`](./00-g
 - **Custo R$ 21-29** se provisionar e deletar no mesmo dia (Standard S1 pesa)
 - **Free Trial USD 200 não funciona** — Azure OpenAI exige PAYG
 - **Regra de ouro:** `az group delete --name rg-lab-intermediario --yes --no-wait` ao final
-- **Pré-requisito hard:** Bloco 2 já executado (`rg-helpsphere-ia` com Foundry Hub `aifhub-apex-prod` + Project `aifproj-helpsphere-base`)
+- **Pré-requisito hard:** Bloco 2 já executado (`rg-lab-intermediario` com Foundry Hub `aifhub-apex-prod` + Project `aifproj-helpsphere-base`)
 
 `version-anchor: Q2-2026`

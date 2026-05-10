@@ -31,7 +31,7 @@ Antes de começar, confirme em ordem:
 
 - [ ] Subscription Azure **Pay-As-You-Go** (Free Trial não serve para este lab)
 - [ ] Cartão de crédito internacional vinculado e ativo
-- [ ] **Bloco 2 da Disciplina 06 já executado** — RG `rg-helpsphere-ia` existe na sua subscription com Foundry Hub `aifhub-apex-prod` + Project base `aifproj-helpsphere-base`
+- [ ] **Bloco 2 da Disciplina 06 já executado** — RG `rg-lab-intermediario` existe na sua subscription com Foundry Hub `aifhub-apex-prod` + Project base `aifproj-helpsphere-base`
 - [ ] Quota Azure OpenAI aprovada na sua region (≥30K TPM em `text-embedding-3-large` e `gpt-4.1-mini`) — peça via support request **1-3 dias antes** (Pré-aula 0 cobre isso)
 - [ ] Azure CLI 2.x instalado (`az --version`)
 - [ ] Azure Developer CLI instalado (`azd version`)
@@ -85,7 +85,7 @@ azd up
 
 **Por que clone único?** Esta disciplina é de IA, não DevOps. Workflows com fork separado de `apex-helpsphere`, branches `feature/`, PR pra main, sync upstream — atrapalham o foco em Azure AI services. O `apex-rag-lab` é o fork-funcional canônico que já contém o template `apex-helpsphere` completo + Function App de RAG + os 15 arquivos do plug.
 
-**Por que `azd up` reaproveita o RG?** O `azd env` deste fork já está apontado para o RG `rg-helpsphere-{env}` provisionado no Bloco 2. O `azd up` faz upgrade in-place dos recursos (Bicep deltas) sem criar RG novo. Custo zero adicional além dos R$ 21-29 do RG já provisionado.
+**Por que `azd up` reaproveita o RG?** O `azd env` deste fork já está apontado para o RG `rg-helpsphere-saas` provisionado no Bloco 2. O `azd up` faz upgrade in-place dos recursos (Bicep deltas) sem criar RG novo. Custo zero adicional além dos R$ 21-29 do RG já provisionado.
 
 ---
 
@@ -105,7 +105,7 @@ Sua subscription pode ter 240K TPM em "East US" mas 0 TPM em "Brazil South". Cad
 
 ### #4 — Foundry Hub é pré-existente, Project é novo
 
-A Parte 6 espera que `aifhub-apex-prod` JÁ EXISTA (criado no Bloco 2 dentro do `rg-helpsphere-ia`). Você só cria o **Project** novo `aifproj-helpsphere-rag` dentro do Hub. Se tentar criar Hub novo, terá custo duplicado e quebra do contrato pedagógico.
+A Parte 6 espera que `aifhub-apex-prod` JÁ EXISTA (criado no Bloco 2 dentro do `rg-lab-intermediario`). Você só cria o **Project** novo `aifproj-helpsphere-rag` dentro do Hub. Se tentar criar Hub novo, terá custo duplicado e quebra do contrato pedagógico.
 
 ### #5 — RBAC propaga lentamente
 

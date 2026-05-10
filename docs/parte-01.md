@@ -15,7 +15,7 @@
 
 ## Pré-requisitos
 
-- ✅ Bloco 2 concluído (`rg-helpsphere-ia` + Foundry Hub `aifhub-apex-prod`)
+- ✅ Bloco 2 concluído (`rg-lab-intermediario` + Foundry Hub `aifhub-apex-prod`)
 - ✅ Subscription PAYG · Azure CLI 2.x · 3 PDFs sample baixados em `~/Downloads/sample-kb/`
 
 ## ✅ Checkpoint Parte 1

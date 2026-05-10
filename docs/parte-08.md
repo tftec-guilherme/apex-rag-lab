@@ -18,7 +18,7 @@
 ## Pré-requisitos
 
 - ✅ Partes 1-7 completas
-- ✅ Bloco 2 completo (RG `rg-helpsphere-{env}` existente, deployed via `azd up`)
+- ✅ Bloco 2 completo (RG `rg-helpsphere-saas` existente, deployed via `azd up`)
 - ✅ Function App de RAG da Parte 7 com URL e key anotadas
 
 ## ✅ Checkpoint Parte 8

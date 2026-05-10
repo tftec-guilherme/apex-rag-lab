@@ -123,7 +123,7 @@ az group delete --name rg-lab-intermediario --yes --no-wait
 
 - Subscription Azure **Pay-As-You-Go** (Free Trial não serve)
 - Cartão de crédito internacional vinculado
-- **Bloco 2 da Disciplina 06 concluído** — `rg-helpsphere-ia` provisionado com Foundry Hub `aifhub-apex-prod` + Project base `aifproj-helpsphere-base`
+- **Bloco 2 da Disciplina 06 concluído** — `rg-lab-intermediario` provisionado com Foundry Hub `aifhub-apex-prod` + Project base `aifproj-helpsphere-base`
 - Quota Azure OpenAI aprovada na subscription com **≥30K TPM** para `text-embedding-3-large` e **≥30K TPM** para `gpt-4.1-mini` (peça via support request 1-3 dias antes — Pré-aula 0)
 - Azure CLI 2.x · Azure Developer CLI (`azd`) · VS Code com extensão Azure Functions
 - Python 3.11+ (para scripts de indexação)
