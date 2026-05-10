@@ -122,7 +122,7 @@ export DI_KEY="<sua-key>"
 | Azure AI Translator | `tr-helpsphere-rag` | S1 (Standard) | pago por uso | R$ 1 |
 | Function App | `func-helpsphere-rag` | Consumption (Y1) | gratuito (1M exec/mês) | desprezível |
 | Application Insights | `ai-helpsphere-rag` | Workspace-based | ~R$ 5 | R$ 1-3 |
-| Managed Identity (já existe) | `mi-helpsphere-ia` | — | gratuito | — |
+| Managed Identity | `mi-helpsphere-ia` | criada no Passo 1.5 (RG `rg-helpsphere-ia`) | gratuito | — |
 | **Total** | | | **~R$ 270/mês ligado** | **R$ 21-29 lab realista** |
 
 ---
@@ -365,7 +365,19 @@ az storage blob list `
 
 Você deve ver os 3 arquivos PDF listados.
 
-## Passo 1.5 — Validar Managed Identity (já criado no Bloco 2)
+## Passo 1.5 — Criar Managed Identity (cross-block)
+
+A `mi-helpsphere-ia` é uma **User-assigned Managed Identity** criada no Resource Group da família IA (`rg-helpsphere-ia` do Bloco 2). Vai ser referenciada por todos os recursos deste lab (Storage, AI Search, Function App) — fica fora do `rg-lab-intermediario` propositalmente: assim sobrevive ao `az group delete rg-lab-intermediario` no cleanup e fica disponível para os Labs Final e Avançado.
+
+```bash
+# Criar a MI usando a mesma location do RG da família IA
+az identity create `
+  --name mi-helpsphere-ia `
+  --resource-group rg-helpsphere-ia `
+  --location $(az group show --name rg-helpsphere-ia --query location -o tsv)
+```
+
+Validar e capturar identifiers:
 
 ```bash
 az identity show `
@@ -375,6 +387,8 @@ az identity show `
 ```
 
 Anote `principalId` e `clientId`. O `mi-helpsphere-ia` vai ser referenciado por todos os recursos deste lab.
+
+> **Idempotência:** se o `az identity create` falhar com `already exists`, a MI já foi criada em uma sessão anterior — siga direto para o `az identity show` e capture os identifiers.
 
 ## Passo 1.6 — Atribuir RBAC do Managed Identity ao Storage
 
