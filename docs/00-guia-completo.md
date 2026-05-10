@@ -748,14 +748,27 @@ Baixe a imagem de exemplo `sample-screenshot.png` (em `03_Aplicações/sample-sc
 
 Teste via cURL:
 
+> ⚠️ **`curl.exe` (binário real) vs `curl` (alias PowerShell):** no Windows PowerShell 5.1 e Windows PowerShell Core, `curl` é **alias para `Invoke-WebRequest`** — comportamento e flags totalmente diferentes do `curl` Unix. Sempre use **`curl.exe`** explicitamente nos comandos abaixo. O `curl.exe` vem nativo no Windows 10+ (`C:\Windows\System32\curl.exe`).
+>
+> Não esqueça do **`@`** antes do path do arquivo em `--data-binary` — sem `@`, o `curl.exe` envia a string literal do path como body (e o serviço Vision retorna `InvalidImageFormat`).
+
 ```powershell
 $env:VISION_KEY = "<sua-key>"
 
-curl -X POST "https://vis-helpsphere-rag.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read&language=pt" `
+curl.exe -X POST "https://vis-helpsphere-rag.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read&language=pt" `
   -H "Ocp-Apim-Subscription-Key: $env:VISION_KEY" `
   -H "Content-Type: application/octet-stream" `
-  --data-binary @sample-screenshot.png
+  --data-binary "@sample-screenshot.png"
 ```
+
+> **Alternativa idiomática PowerShell** (sem depender de curl.exe):
+>
+> ```powershell
+> Invoke-WebRequest -Uri "https://vis-helpsphere-rag.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read&language=pt" `
+>   -Method POST `
+>   -Headers @{"Ocp-Apim-Subscription-Key" = $env:VISION_KEY; "Content-Type" = "application/octet-stream"} `
+>   -InFile "sample-screenshot.png" | Select-Object -ExpandProperty Content
+> ```
 
 Você deve receber JSON com `readResult.blocks[].lines[].text` contendo o texto extraído.
 
@@ -818,7 +831,7 @@ az role assignment create `
 
 Detect language:
 ```powershell
-curl -X POST "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0" `
+curl.exe -X POST "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0" `
   -H "Ocp-Apim-Subscription-Key: $env:TRANSLATOR_KEY" `
   -H "Ocp-Apim-Subscription-Region: eastus2" `
   -H "Content-Type: application/json" `
@@ -829,7 +842,7 @@ Saída: `[{"language":"es","score":1.0}]`
 
 Translate es→pt:
 ```powershell
-curl -X POST "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=es&to=pt" `
+curl.exe -X POST "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=es&to=pt" `
   -H "Ocp-Apim-Subscription-Key: $env:TRANSLATOR_KEY" `
   -H "Ocp-Apim-Subscription-Region: eastus2" `
   -H "Content-Type: application/json" `
