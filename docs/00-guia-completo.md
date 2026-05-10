@@ -613,24 +613,27 @@ if __name__ == "__main__":
 
 ## Passo 2.4 — Instalar dependências e rodar
 
-```bash
+```powershell
+# Criar venv Python
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou venv\Scripts\activate  # Windows
+.\venv\Scripts\Activate.ps1   # Windows PowerShell
+# ou: source venv/bin/activate  # Linux/Mac/WSL
 
 pip install azure-storage-blob azure-ai-documentintelligence
 
-# Setar env vars
-export STORAGE_CONNECTION_STRING=$(az storage account show-connection-string `
-  --name $STORAGE_NAME `
+# Setar env vars (PowerShell)
+$env:STORAGE_CONNECTION_STRING = (az storage account show-connection-string `
+  --name $env:STORAGE_NAME `
   --resource-group rg-lab-intermediario `
   --query connectionString -o tsv)
 
-export DI_ENDPOINT="https://di-helpsphere-rag.cognitiveservices.azure.com/"
-export DI_KEY="<sua-chave-DI>"
+$env:DI_ENDPOINT = "https://di-helpsphere-rag.cognitiveservices.azure.com/"
+$env:DI_KEY = "<sua-chave-DI>"
 
 python index_pdfs.py
 ```
+
+> **Nota Linux/Mac/WSL:** se você está em bash/zsh, troque `$env:VAR = "..."` por `export VAR="..."`, `$env:VAR = (cmd)` por `export VAR=$(cmd)` e use `\` em vez de `` ` `` para continuação de linha.
 
 Saída esperada:
 ```
