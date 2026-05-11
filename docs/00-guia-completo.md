@@ -1815,6 +1815,12 @@ Esta Parte 8 reaproveita o Resource Group e a infra já provisionada pelo Bloco 
 
 No diretório raiz do fork `apex-rag-lab` (onde está o `azure.yaml`):
 
+> ⚠️ **Sincronize o `azd env` do Bloco 2 primeiro** — o fork `apex-rag-lab` reaproveita o `azd env` populado pelo `azd up` do Bloco 2 (no repo `apex-helpsphere`). Antes de rodar os comandos abaixo, copie a pasta `.azure/` do Bloco 2 para dentro do fork:
+>
+> ```powershell
+> Copy-Item -Recurse -Force C:\Projetos\apex-helpsphere\.azure C:\Projetos\apex-rag-lab\
+> ```
+
 ```powershell
 # Descobrir o RG configurado no azd env atual
 azd env get-value AZURE_RESOURCE_GROUP
