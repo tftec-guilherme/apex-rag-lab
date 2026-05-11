@@ -68,6 +68,40 @@ curl -X POST "https://func-helpsphere-rag.azurewebsites.net/api/chat/rag" \
 
 ---
 
+### `BadRequestError 400: maximum input length is 8192 tokens` em `index_to_search.py`
+
+**Causa:** `text-embedding-3-large` aceita no máximo 8192 tokens por input. Algum chunk gerado pelo Document Intelligence (prebuilt-layout, 6000 chars + 200 overlap) ultrapassou esse limite — comum em PDFs com páginas densas como o `azure-openai-overview.pdf` (Microsoft Learn export).
+
+**Sintoma exato:**
+```
+openai.BadRequestError: Error code: 400 - {'error': {'message':
+"Invalid 'input[0]': maximum input length is 8192 tokens."}}
+```
+
+**Fix:** truncar cada texto antes de embeddar. Já aplicado em [`snippets/index_to_search.py`](../snippets/index_to_search.py) via constante `MAX_EMBED_CHARS = 28000` (~7000 tokens com margem de segurança).
+
+```powershell
+# Confirme que sua versão local tem o fix
+git -C C:\Aulas\apex-rag-lab pull origin main
+# OU edite manualmente a função embed_batch acrescentando:
+#   truncated = [t[:28000] for t in texts]
+#   response = aoai.embeddings.create(input=truncated, ...)
+python snippets/index_to_search.py
+```
+
+**Em produção (melhoria opcional):** usar `tiktoken` para contagem exata de tokens em vez de slice por chars (1 token ≈ 4 chars em inglês técnico; PT-BR ≈ 3-4 chars).
+
+```python
+import tiktoken
+enc = tiktoken.encoding_for_model("text-embedding-3-large")
+def truncate_tokens(text: str, max_tokens: int = 8000) -> str:
+    return enc.decode(enc.encode(text)[:max_tokens])
+```
+
+**Causa raiz (futuro):** ajustar `index_pdfs.py` para dividir chunks em pedaços menores quando ultrapassam o limite, em vez de truncar em runtime. Tema para refactor v0.4.0.
+
+---
+
 ### `429 Too Many Requests` em Azure OpenAI
 
 **Causa:** TPM (tokens-per-minute) acima do limite do deployment.

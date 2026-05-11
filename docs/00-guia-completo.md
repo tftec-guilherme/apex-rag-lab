@@ -1089,6 +1089,8 @@ No portal Foundry (`ai.azure.com`):
 > **Atenção custo:** `text-embedding-3-large` cobra ~`$0.13 por 1M tokens` de input (não há custo de output em embeddings). Consulte preço atual em `azure.microsoft.com/pricing/details/cognitive-services/openai-service/`. Volume do lab (~50k tokens para indexar a base toda) tem custo desprezível, ~R$ 0,03. Delete o RG ao final para evitar cobranças residuais do endpoint.
 
 > **Sobre a dimensão:** `text-embedding-3-large` retorna vetores de **3072 dimensões** — confira que o índice criado no Passo 5.4 declara `dimensions=3072` no campo `embedding`, caso contrário o `index_to_search.py` falhará com `400 Bad Request: dimension mismatch`.
+>
+> **Sobre o limite de tokens:** `text-embedding-3-large` aceita **no máximo 8192 tokens por input**. Chunks gerados pelo Document Intelligence (6000 chars + 200 overlap) podem ultrapassar quando o PDF tem páginas densas — o `index_to_search.py` trunca a 28000 chars (~7000 tokens com margem) via constante `MAX_EMBED_CHARS` para evitar `BadRequest 400`. Veja troubleshooting "`maximum input length is 8192 tokens`".
 
 ## Passo 6.3 — Deploy do modelo `gpt-4.1-mini`
 
@@ -1166,10 +1168,21 @@ aoai = AzureOpenAI(
     azure_endpoint=AOAI_ENDPOINT,
 )
 
+# text-embedding-3-large aceita no máximo 8192 tokens por input. Chunks gerados
+# pelo Document Intelligence (prebuilt-layout, 6000 chars overlap 200) podem
+# ultrapassar quando o PDF tem páginas densas (ex: azure-openai-overview.pdf).
+# Truncamos a ~28000 chars (~7000 tokens com margem de segurança) antes de
+# chamar o endpoint para evitar BadRequest 400. Em produção, usar tiktoken
+# para contagem exata de tokens.
+MAX_EMBED_CHARS = 28000
+
 def embed_batch(texts: list[str]) -> list[list[float]]:
-    """Gera embeddings em batch (Azure OpenAI suporta até 16 inputs)."""
+    """Gera embeddings em batch (Azure OpenAI suporta até 16 inputs).
+    Trunca cada texto a MAX_EMBED_CHARS (~7000 tokens) — text-embedding-3-large
+    aceita max 8192 tokens; chunks grandes do DI podem ultrapassar."""
+    truncated = [t[:MAX_EMBED_CHARS] for t in texts]
     response = aoai.embeddings.create(
-        input=texts,
+        input=truncated,
         model="text-embedding-3-large"
     )
     return [item.embedding for item in response.data]
