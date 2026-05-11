@@ -40,13 +40,37 @@ aoai = AzureOpenAI(
 # ultrapassar quando o PDF tem páginas densas. Truncamos a ~28000 chars (~7000
 # tokens com margem de segurança) antes de chamar o endpoint para evitar
 # BadRequest 400. Em produção, usar tiktoken para contagem exata de tokens.
-MAX_EMBED_CHARS = 28000
+# text-embedding-3-large aceita no máximo 8192 tokens por input. Chunks gerados
+# pelo Document Intelligence (prebuilt-layout, 6000 chars overlap 200) podem
+# ultrapassar quando PDF tem páginas densas ou texto não-inglês.
+#
+# Truncamos com tiktoken (contagem EXATA de tokens). Se tiktoken não estiver
+# disponível, fallback para truncamento agressivo por chars (~10000 chars =
+# ~3500 tokens em qualquer densidade).
+try:
+    import tiktoken
+    _enc = tiktoken.get_encoding("cl100k_base")  # tokenizer usado pelos modelos
+                                                  # text-embedding-3-* da OpenAI
+    MAX_EMBED_TOKENS = 8000  # margem de 192 tokens vs limite 8192
+
+    def _truncate(text: str) -> str:
+        tokens = _enc.encode(text)
+        if len(tokens) <= MAX_EMBED_TOKENS:
+            return text
+        return _enc.decode(tokens[:MAX_EMBED_TOKENS])
+
+    print(f"[i] tiktoken disponível — truncando a {MAX_EMBED_TOKENS} tokens exatos")
+except ImportError:
+    MAX_EMBED_CHARS = 10000  # super conservador: ~3000 tokens em qualquer densidade
+    def _truncate(text: str) -> str:
+        return text[:MAX_EMBED_CHARS]
+    print(f"[i] tiktoken NÃO instalado — fallback truncamento {MAX_EMBED_CHARS} chars")
+    print(f"    Para precisão máxima: pip install tiktoken")
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
     """Gera embeddings em batch (Azure OpenAI suporta até 16 inputs).
-    Trunca cada texto a MAX_EMBED_CHARS (~7000 tokens) — text-embedding-3-large
-    aceita max 8192 tokens; chunks grandes do DI podem ultrapassar."""
-    truncated = [t[:MAX_EMBED_CHARS] for t in texts]
+    Trunca via tiktoken (exato) ou via chars (fallback agressivo)."""
+    truncated = [_truncate(t) for t in texts]
     response = aoai.embeddings.create(
         input=truncated,
         model="text-embedding-3-large"
