@@ -76,7 +76,7 @@ def process_pdf(blob_name: str):
     print(f"[+] Processing {blob_name}...")
 
     # Download blob
-    blob_client = blob_service.get_blob_client(container="kb", blob=blob_name)
+    blob_client = blob_service.get_blob_client(container="kbai", blob=blob_name)
     pdf_bytes = blob_client.download_blob().readall()
 
     # Document Intelligence
@@ -117,7 +117,7 @@ def process_pdf(blob_name: str):
     return len(chunks)
 
 def main():
-    container_client = blob_service.get_container_client("kb")
+    container_client = blob_service.get_container_client("kbai")
     pdfs = [b.name for b in container_client.list_blobs() if b.name.endswith(".pdf")]
     print(f"[i] {len(pdfs)} PDFs encontrados")
 

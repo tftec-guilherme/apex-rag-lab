@@ -13,7 +13,7 @@ import os, json, time, logging
 import azure.functions as func
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
-from azure.search.documents.models import VectorizableTextQuery, QueryType
+from azure.search.documents.models import VectorizedQuery, QueryType
 from openai import AzureOpenAI
 import requests
 
@@ -80,8 +80,8 @@ def hybrid_search(query: str, top: int = 5) -> list[dict]:
     results = search_client.search(
         search_text=query,
         vector_queries=[
-            VectorizableTextQuery(
-                text=query,
+            VectorizedQuery(
+                vector=query_vector,
                 k_nearest_neighbors=20,
                 fields="content_vector",
             )
