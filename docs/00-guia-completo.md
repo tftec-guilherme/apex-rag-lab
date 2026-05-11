@@ -1803,38 +1803,41 @@ Saída esperada:
 
 ---
 
-# Parte 8 — Plug no stack apex-helpsphere real (30min)
+# Parte 8 — Plug RAG no fork helpsphere-template (30min)
 
-> ✅ **`apex-rag-lab` é fork-funcional único** — este repo já contém o template `apex-helpsphere` completo + Function App de RAG + os 15 arquivos do plug RAG (com `[CRIAR-X]` markers nos 4 arquivos críticos). Workflow: `git clone` → edita **19 linhas marcadas** (5 backend + 14 frontend) → `azd up` reaproveita o RG do Bloco 2 → valida 4 hosts no Portal.
+> ✅ **`apex-rag-lab` é fork-funcional único** — este repo já contém o template `apex-helpsphere` completo (backend Python + frontend React + tickets-service .NET) **mais** o plug RAG (Function App + 15 arquivos novos, 4 deles com markers `[CRIAR-X]`). Workflow: `git clone` → edita **19 linhas marcadas** (5 backend + 14 frontend) → `azd up` provisiona o stack inteiro em `rg-lab-intermediario` → valida 4 hosts no Portal.
 
-> **Pedagogia:** você NÃO copia o repo `apex-helpsphere` separadamente, NÃO cria branches, NÃO abre PR. O fork de `apex-rag-lab` é o único artefato — é onde Bloco 2 (SaaS base) + Bloco 3 (Lab Inter / RAG) convivem no mesmo `azd env`. Após `azd up`, os 4 hosts (Function App `func-helpsphere-rag` + App Service frontend + 2 Container Apps backend) ficam visíveis lado a lado no Portal — o panorama completo da arquitetura.
+> **Pedagogia (alinhado à decisão D6, Story 06.17):** o Bloco 2 (`apex-helpsphere` base em `rg-helpsphere-saas`/westus3) é pré-requisito **conceitual** — você precisa entender SaaS multi-tenant antes de adicionar RAG, mas o Lab Inter **NÃO reaproveita aquela infra**. O fork `apex-rag-lab` provisiona seu próprio stack em `rg-lab-intermediario`/eastus2 (mesmo RG da Parte 7 — onde já vivem Function App, Storage, AI Search, AOAI). Após `azd up`, os 4 hosts (Function App `func-helpsphere-rag` + App Service frontend + 2 Container Apps backend) ficam visíveis lado a lado no Portal — o panorama completo do Lab Inter.
 
-## Passo 8.1 — Pré-requisito: Bloco 2 (`azd up`) já concluído
+## Passo 8.1 — Configurar `azd env` do fork para `rg-lab-intermediario`
 
-Esta Parte 8 reaproveita o Resource Group e a infra já provisionada pelo Bloco 2. Antes de continuar, confirme que o stack apex-helpsphere base está deployed.
+Esta Parte 8 provisiona o stack helpsphere-template-com-RAG **no mesmo RG da Parte 7** (`rg-lab-intermediario`). Antes de rodar `azd up`, configure o `azd env` do fork para apontar a esse RG e à região correta.
 
 No diretório raiz do fork `apex-rag-lab` (onde está o `azure.yaml`):
 
 ```powershell
-# Descobrir o RG configurado no azd env atual
-azd env get-value AZURE_RESOURCE_GROUP
-# Ex.: rg-helpsphere-actions
+# 1. Criar o azd env do Lab Inter (se ainda nao criou)
+azd env new lab-inter
+# (se ja criou, basta selecionar:)
+# azd env select lab-inter
 
-# Validar que o RG existe e está provisionado
-$env:RG_HELPSPHERE = (azd env get-value AZURE_RESOURCE_GROUP)
-az group show --name $env:RG_HELPSPHERE --query "properties.provisioningState" -o tsv
+# 2. Apontar o env ao RG e regiao da Parte 7 (rg-lab-intermediario/eastus2)
+azd env set AZURE_RESOURCE_GROUP rg-lab-intermediario
+azd env set AZURE_LOCATION eastus2
+
+# 3. Validar o env
+azd env get-value AZURE_RESOURCE_GROUP
+# Esperado: rg-lab-intermediario
+
+az group show --name rg-lab-intermediario --query "properties.provisioningState" -o tsv
 # Esperado: Succeeded
 ```
 
-Se `azd env get-value` não retornar valor, ou se o `az group show` falhar com `ResourceGroupNotFound`, **volte ao Bloco 2** (`Pre_Provisionamento_Pre_Aula.md`) e rode `azd up` antes de continuar — sem o RG do apex-helpsphere base, não há onde plugar o RAG.
+Se o `az group show` retornar `ResourceGroupNotFound`, **volte à Parte 1** (Passo 1.2 — criar `rg-lab-intermediario`) e complete as Partes 1-7 antes de continuar — o RAG plug depende do Function App, AI Search e AOAI deployments que vivem nesse RG.
 
-Capture as URLs já existentes que vamos usar adiante:
+> **Nota — por que NÃO reaproveitamos o RG do Bloco 2:** decisão D6 da Story 06.17 (2026-05-10) consolidou que `rg-helpsphere-ia` NÃO seria criado; toda a infra de IA do Lab Inter (MI, Foundry Hub, Storage, AI Search, AOAI, Function App) vive em `rg-lab-intermediario`/eastus2. O Bloco 2 (`rg-helpsphere-saas`/westus3) continua isolado como SaaS de produção. Cross-region (eastus2↔westus3) adicionaria 80-120ms de latência + egress charge sem ganho pedagógico. Manter os dois stacks separados é mais limpo e mais barato.
 
-```powershell
-$env:BACKEND_URI = (azd env get-value BACKEND_URI)
-$env:TICKETS_BACKEND_URI = (azd env get-value TICKETS_BACKEND_URI)
-$env:FRONTEND_URI = (azd env get-value FRONTEND_URI)
-```
+As URIs `BACKEND_URI`, `TICKETS_BACKEND_URI` e `FRONTEND_URI` **serão geradas pelo `azd up` no Passo 8.7** — não precisam (e não podem) ser capturadas antes. Capturamos depois do deploy, no próprio Passo 8.7.
 
 ## Passo 8.2 — Tour dos 15 arquivos do plug RAG no fork
 
@@ -2006,19 +2009,34 @@ Com os 4 arquivos editados e as env vars setadas, faça o redeploy do stack inte
 azd up
 ```
 
-O `azd up` reaproveita o RG do Bloco 2 (`$RG_HELPSPHERE`) e atualiza tudo em uma única invocação:
+O `azd up` provisiona o stack helpsphere-template-com-RAG em `rg-lab-intermediario` (mesmo RG da Parte 7) em uma única invocação:
 
-1. **Bicep `infra/main.bicep`** — propaga `ragEnabled`/`ragFunctionUrl`/`ragFunctionKey` ao `appEnvVariables` do `capps-backend-{env}` (deploy condicional só se houve mudança em params)
-2. **Container App backend Python (`capps-backend-{env}`)** — rebuild da imagem com `rag_chat.py` registrado, push para ACR, nova revision
-3. **Container App tickets .NET (`capps-tickets-{env}`)** — rebuild apenas se houve mudança no código (provavelmente skip)
-4. **App Service frontend (`app-helpsphere-{env}`)** — rebuild Vite com `ChatPanel.tsx` + `Shell.tsx` + `authConfig.ts` + `rag.ts`, upload do bundle estático
+1. **Bicep `infra/main.bicep`** — provisiona/atualiza Container Apps Environment + backend + tickets + frontend App Service, propaga `ragEnabled`/`ragFunctionUrl`/`ragFunctionKey` ao `appEnvVariables` do `capps-backend-{env}`
+2. **Container App backend Python (`capps-backend-{env}`)** — build da imagem com `rag_chat.py` registrado, push para ACR, nova revision
+3. **Container App tickets .NET (`capps-tickets-{env}`)** — build da imagem com endpoints REST (`/api/tickets/...`)
+4. **App Service frontend (`app-helpsphere-{env}`)** — build Vite com `ChatPanel.tsx` + `Shell.tsx` + `authConfig.ts` + `rag.ts`, upload do bundle estático
 
-Tempo estimado total: **6-10min** (depende da camada de cache Docker e do tamanho do bundle Vite).
+Tempo estimado total: **8-15min** (primeiro deploy é mais lento — recursos novos sendo provisionados; redeploys subsequentes ficam em 6-10min com cache Docker).
+
+Após `azd up` retornar `SUCCESS`, capture as URIs do stack recém-provisionado:
+
+```powershell
+$env:BACKEND_URI = (azd env get-value BACKEND_URI)
+$env:TICKETS_BACKEND_URI = (azd env get-value TICKETS_BACKEND_URI)
+$env:FRONTEND_URI = (azd env get-value FRONTEND_URI)
+
+# Conferir
+Write-Host "Backend:  $env:BACKEND_URI"
+Write-Host "Tickets:  $env:TICKETS_BACKEND_URI"
+Write-Host "Frontend: $env:FRONTEND_URI"
+```
+
+Esses 3 valores são usados nos próximos passos (validação no Portal, smoke teste end-to-end).
 
 > **Troubleshooting comum:**
 > - **`The resource name X is already in use`** — colisão de nome global (Storage, ACR, Function App). Rode `azd env new <novo-nome>` e tente novamente OU edite `infra/main.bicep` para usar `uniqueString(resourceGroup().id)` no token.
 > - **`SubscriptionLimitReached`** — quota de Container Apps por região atingida. Use região alternativa ou solicite quota.
-> - **`ImagePullBackOff` na nova revision** — ACR auth pendente. Aguarde ~2min e dê `az containerapp revision restart -n capps-backend-{env} -g $env:RG_HELPSPHERE --revision <nome>`.
+> - **`ImagePullBackOff` na nova revision** — ACR auth pendente. Aguarde ~2min e dê `az containerapp revision restart -n capps-backend-{env} -g rg-lab-intermediario --revision <nome>`.
 
 ## Passo 8.8 — Validação 4 hosts no Portal + smoke teste end-to-end
 
@@ -2030,19 +2048,19 @@ Com o `azd up` retornando `SUCCESS`, abra **4 abas no Portal Azure lado a lado**
 - **Functions:** lista contém `suggest` (a função do Passo 7.5)
 - **Application Insights → Live Metrics:** confirma 0 falhas recentes
 
-**Aba 2 — App Service `app-helpsphere-{env}` (RG `$RG_HELPSPHERE`)**
+**Aba 2 — App Service `app-helpsphere-{env}` (RG `rg-lab-intermediario`)**
 - Portal → App Services → `app-helpsphere-{env}-{token}`
 - **Overview:** Status = **Running** · URL = `$FRONTEND_URI`
 - **Deployment Center:** último deploy = `Success` (timestamp do `azd up`)
 
-**Aba 3 — Container App `capps-backend-{env}` (RG `$RG_HELPSPHERE`)**
+**Aba 3 — Container App `capps-backend-{env}` (RG `rg-lab-intermediario`)**
 - Portal → Container Apps → `capps-backend-{env}-{token}`
 - **Overview:** Provisioning state = **Succeeded** · Running status = **Running**
 - **Revisions and replicas:** revision mais recente é **Active** com 100% do tráfego e status **Healthy**
 - **Containers → Environment variables:** confirma `RAG_ENABLED=true`, `RAG_FUNCTION_URL=https://func-helpsphere-rag-...`, `RAG_FUNCTION_KEY=*** (secret)`
 - **Log stream:** procure linha `Blueprint rag_chat registered` no startup
 
-**Aba 4 — Container App `capps-tickets-{env}` (RG `$RG_HELPSPHERE`)**
+**Aba 4 — Container App `capps-tickets-{env}` (RG `rg-lab-intermediario`)**
 - Portal → Container Apps → `capps-tickets-{env}-{token}`
 - **Overview:** Provisioning state = **Succeeded** · Running status = **Running**
 - **Revisions and replicas:** revision Active e Healthy
@@ -2071,7 +2089,7 @@ Se a resposta vier em <3s com citações plausíveis, o pipeline RAG end-to-end 
 
 ## ✅ Checkpoint Parte 8
 
-- [ ] `azd env get-value AZURE_RESOURCE_GROUP` retorna o RG do Bloco 2
+- [ ] `azd env get-value AZURE_RESOURCE_GROUP` retorna `rg-lab-intermediario`
 - [ ] 4 arquivos críticos editados (todos os markers `[CRIAR-X]` preenchidos): `rag_chat.py`, `ChatPanel.tsx`, `Shell.tsx`, `authConfig.ts`
 - [ ] `azd up` concluiu com `SUCCESS` sem erros
 - [ ] 4 abas no Portal mostram todos os hosts em estado **Healthy/Running**: Function App `func-helpsphere-rag` + App Service `app-helpsphere-{env}` + Container App `capps-backend-{env}` + Container App `capps-tickets-{env}`
