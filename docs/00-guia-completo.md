@@ -1839,146 +1839,102 @@ Capture as URLs já existentes que vamos usar adiante:
 ```powershell
 $env:BACKEND_URI = (azd env get-value BACKEND_URI)
 $env:TICKETS_BACKEND_URI = (azd env get-value TICKETS_BACKEND_URI)
-$env:FRONTEND_URI = (azd env get-value FRONTEND_URI)
+# Nota: FRONTEND_URI ainda nao existe neste momento — ele sera capturado
+# DEPOIS do `azd up` da Parte 8.7 (quando o frontend novo com ChatPanel for
+# provisionado e o azd registrar a URL).
 ```
 
-## Passo 8.2 — Tour dos 15 arquivos do plug RAG no fork
+## Passo 8.2 — Tour explicativo dos 15 arquivos do plug RAG (sem edição)
 
-Antes de editar qualquer linha, abra o fork no VS Code e percorra os 15 arquivos do plug RAG. Treze deles já vêm prontos (referência canônica); apenas 4 contêm marcadores `[CRIAR-X]` que você vai preencher nos próximos passos.
+Antes dos próximos passos, acompanhe um **tour guiado** dos 15 arquivos que compõem o plug RAG. Este é o momento da aula onde o instrutor mostra **o que cada arquivo faz no fluxo end-to-end** — você **NÃO edita nada aqui**, só acompanha o panorama. Todos os 15 arquivos já vêm prontos no fork; o tour serve para você entender o "mapa" antes de conferir cada peça nos próximos passos.
 
 ```powershell
-code .   # na raiz do fork apex-rag-lab
+code .   # na raiz do fork apex-rag-lab — para acompanhar o tour visualmente
 ```
 
-| # | Arquivo | Camada | Markers `[CRIAR-X]`? | Por que importa |
-|---|---|---|---|---|
-| 1 | `infra/main.bicep` | Bicep | — | Declara params `ragEnabled`, `ragFunctionUrl`, `ragFunctionKey` (`@secure()`) e os propaga ao Container App backend |
-| 2 | `infra/main.parameters.json` | Bicep | — | Mapeia env vars `RAG_*` do `azd env` para os params Bicep |
-| 3 | **`app/backend/blueprints/rag_chat.py`** | Backend Python | **SIM (5 markers)** | Define o endpoint `POST /chat/rag` — gating, validação JWT multi-tenant, proxy para a Function App |
-| 4 | `app/backend/app.py` | Backend Python | — | Registra o blueprint `rag_chat` no Quart app |
-| 5 | `app/backend/blueprints/__init__.py` | Backend Python | — | Expõe `register_rag_blueprint` no namespace de blueprints |
-| 6 | **`app/frontend/src/components/ChatPanel/ChatPanel.tsx`** | Frontend React | **SIM (7 markers)** | Componente flutuante bottom-right com form (ticket + descrição) + render de suggestion + citations |
-| 7 | `app/frontend/src/components/ChatPanel/ChatPanel.module.css` | Frontend CSS | — | Estilo do painel (posição fixa, animações minimize/close) |
-| 8 | `app/frontend/src/components/ChatPanel/index.ts` | Frontend TS | — | Barrel export do componente |
-| 9 | `app/frontend/src/api/rag.ts` | Frontend TS | — | Cliente HTTP do `/chat/rag` (fetch + bearer token MSAL) |
-| 10 | `app/frontend/src/api/index.ts` | Frontend TS | — | Reexporta `rag.ts` no namespace `api` |
-| 11 | **`app/frontend/src/Shell.tsx`** | Frontend React | **SIM (4 markers)** | Hook `useChatQueryFlag` + triple-gate `ragEnabled && enableChat && ?chat=1` + render condicional do `<ChatPanel />` |
-| 12 | **`app/frontend/src/authConfig.ts`** | Frontend TS | **SIM (3 markers)** | Propaga flag `ragEnabled` ao frontend via resposta de `/auth_setup` |
-| 13 | `tests/test_rag_chat.py` | Pytest | — | 256 linhas testando o endpoint proxy (200/401/502/503) |
-| 14 | `CHANGELOG-LAB-INTER.md` | Docs | — | Changelog técnico do Lab Inter — entrada Wave 4 ACTIVE rewrite (Story 06.13) |
-| 15 | `PARA-O-ALUNO-LAB-INTER.md` | Docs | — | Entrypoint pedagógico — surpresa #7 atualizada + workflow Parte 8 (clone único) |
+| # | Arquivo | Camada | O que faz no fluxo |
+|---|---|---|---|
+| 1 | `infra/main.bicep` | Bicep | Declara os 3 params do plug RAG (`ragEnabled`, `ragFunctionUrl`, `ragFunctionKey`) e propaga ao Container App backend |
+| 2 | `infra/main.parameters.json` | Bicep | Mapeia env vars `RAG_*` do `azd env` para os params Bicep |
+| 3 | `app/backend/blueprints/rag_chat.py` | Backend Python | Endpoint `POST /chat/rag` — gating + multi-tenant + proxy para a Function App |
+| 4 | `app/backend/app.py` | Backend Python | Registra o blueprint `rag_chat` no Quart app |
+| 5 | `app/backend/blueprints/__init__.py` | Backend Python | Expõe `register_rag_blueprint` no namespace |
+| 6 | `app/frontend/src/components/ChatPanel/ChatPanel.tsx` | Frontend React | Painel flutuante bottom-right: form (ticket + descrição) + render da resposta + citações |
+| 7 | `app/frontend/src/components/ChatPanel/ChatPanel.module.css` | Frontend CSS | Estilo do painel (posição fixa, animações minimize/close) |
+| 8 | `app/frontend/src/components/ChatPanel/index.ts` | Frontend TS | Barrel export do componente |
+| 9 | `app/frontend/src/api/rag.ts` | Frontend TS | Cliente HTTP do `/chat/rag` (fetch + bearer token MSAL) |
+| 10 | `app/frontend/src/api/index.ts` | Frontend TS | Reexporta `rag.ts` no namespace `api` |
+| 11 | `app/frontend/src/Shell.tsx` | Frontend React | Triple-gate `ragEnabled && enableChat && ?chat=1` + render condicional do `<ChatPanel />` |
+| 12 | `app/frontend/src/authConfig.ts` | Frontend TS | Propaga flag `ragEnabled` ao frontend via resposta de `/auth_setup` |
+| 13 | `tests/test_rag_chat.py` | Pytest | 256 linhas testando o endpoint proxy (200/401/502/503) |
+| 14 | `CHANGELOG-LAB-INTER.md` | Docs | Changelog técnico do Lab Inter |
+| 15 | `PARA-O-ALUNO-LAB-INTER.md` | Docs | Entrypoint pedagógico do lab |
 
-> **Como navegar os markers:** abra a aba Search do VS Code (`Ctrl+Shift+F`) e busque pelo texto `[CRIAR-` — os 4 arquivos críticos têm **19 ocorrências** no total (5 + 7 + 4 + 3). Cada marker tem comentário inline explicando o que preencher (descrição + WHY + Hint).
+> **Resumo do fluxo:** ChatPanel (frontend) → `/chat/rag` (backend Python) → Function App (sua, da Parte 7) → AOAI + AI Search → resposta com citações volta pelo mesmo caminho.
+>
+> **Os 15 arquivos já vêm prontos.** Nos próximos Passos (8.3, 8.4, 8.5) você apenas **confere** que cada arquivo existe e entende o que ele faz. Quem é desenvolvedor pode opcionalmente abrir e ler — quem não é, segue em frente sem perda de aprendizado do lab.
 
-## Passo 8.3 — Editar `app/backend/blueprints/rag_chat.py`
+## Passo 8.3 — Conferir o backend `rag_chat.py` (pré-pronto, não-dev pode pular o código)
 
-Este arquivo define o endpoint backend `POST /chat/rag` que o frontend chama. Contém **5 markers** cobrindo: extração do `tenant_id` do JWT (multi-tenant safety), leitura do flag `RAG_ENABLED`, gating com 503 didático, construção do upstream endpoint (`/api/tickets/eval/suggest`) e o `aiohttp.session.post` autenticado para a Function App.
+O backend Python do fork já vem com o **endpoint `/chat/rag`** configurado. Você **não precisa editar nada aqui** — é o "encanamento" que conecta o painel de chat (frontend) à sua Function App de RAG (Parte 7).
 
-Abra `app/backend/blueprints/rag_chat.py` e procure por `[CRIAR-1]` até `[CRIAR-5]`.
+**O que esse endpoint faz, em 3 linhas:**
 
-Exemplo de marker antes/depois:
+1. **Confere se o RAG está ligado** (`RAG_ENABLED=true`) — se não, devolve mensagem didática "RAG desabilitado, configure na Parte 8.6".
+2. **Identifica o cliente** (lê `tenant_id` do token) — garantia que cliente A nunca vê dados do cliente B.
+3. **Repassa sua pergunta** para a Function App e devolve a resposta com citações.
 
-```python
-# ANTES (template com marker)
-@bp.post("/chat/rag")
-@auth_required
-async def chat_rag(claims: dict):
-    # [CRIAR-1] Verifique RAG_ENABLED — se false, retorne 503
-    pass
+**Confira só que o arquivo existe:**
+
+```powershell
+Get-Item C:\Projetos\apex-rag-lab\app\backend\blueprints\rag_chat.py
+# Esperado: arquivo listado, ~6-8 KB.
 ```
 
-```python
-# DEPOIS (linha preenchida pelo aluno)
-@bp.post("/chat/rag")
-@auth_required
-async def chat_rag(claims: dict):
-    # [CRIAR-1] Verifique RAG_ENABLED — se false, retorne 503
-    if os.environ.get("RAG_ENABLED", "false").lower() != "true":
-        return jsonify({"error": "RAG feature disabled"}), 503
+> **Para curiosos (opcional, não exigido):** se quiser entender o código por dentro (Python + aiohttp + Quart), abra no VS Code e busque por `[CRIAR-X` (Ctrl+F) — cada um dos 5 comentários explica WHAT/WHY/HINT da linha abaixo. **Pula este mergulho se você não é dev** — não atrapalha o resto do lab.
+
+## Passo 8.4 — Conferir o frontend `ChatPanel.tsx` (pré-pronto, não-dev pode pular o código)
+
+O componente React do painel flutuante de chat já vem pronto. Você **não precisa editar nada aqui** — é o "visual" que aparece no canto inferior direito da tela.
+
+**O que esse componente faz, em 3 linhas:**
+
+1. **Renderiza um painel flutuante** (canto inferior direito) com 2 campos: número do ticket + descrição do problema.
+2. **Quando você clica em "Sugerir resposta"**, chama o backend (`/chat/rag`) com seu token JWT.
+3. **Renderiza a resposta** retornada (texto sugerido + nível de confiança + citações dos PDFs).
+
+**Confira só que o arquivo existe:**
+
+```powershell
+Get-Item C:\Projetos\apex-rag-lab\app\frontend\src\components\ChatPanel\ChatPanel.tsx
+# Esperado: arquivo listado, ~5-7 KB.
 ```
 
-Repita para os demais markers (`[CRIAR-2]` extrai `tenant_id` de `claims`, `[CRIAR-3]` monta o payload upstream, `[CRIAR-4]` faz o `httpx.post` à Function App, `[CRIAR-5]` mapeia a resposta).
+> **Para curiosos (opcional, não exigido):** se quiser entender o código (React + TypeScript + MSAL token), abra no VS Code e busque por `[CRIAR-X` — os 7 comentários explicam a lógica. O CSS (`ChatPanel.module.css`) ao lado já tem todos os estilos. **Pula se você não é dev** — você vai ver o painel funcionando ao vivo no Passo 8.8.
 
-> Ao terminar, salve e confira: `grep -c "\[CRIAR-" app/backend/blueprints/rag_chat.py` deve retornar `0` (todos os markers preenchidos — apenas os comentários `# [CRIAR-X]` continuam, mas o código ao lado está cravado).
+## Passo 8.5 — Conferir `Shell.tsx` + `authConfig.ts` (pré-prontos, não-dev pode pular o código)
 
-## Passo 8.4 — Editar `app/frontend/src/components/ChatPanel/ChatPanel.tsx`
+Esses dois arquivos do frontend também já vêm prontos. Você **não precisa editar nada aqui** — eles controlam **quando** o painel de chat aparece na tela.
 
-Este é o componente React que renderiza o painel flutuante de chat no canto inferior direito. Contém **7 markers** cobrindo: import do cliente HTTP (`ragSuggestApi`), declaração do componente, validação de input (ticketId numérico + descrição não-vazia), chamada à API com JWT (`getToken(instance)`), label condicional do botão durante loading, render do `suggested_response` + confidence e render das citations.
+**O que esses 2 arquivos fazem juntos:**
 
-Abra `app/frontend/src/components/ChatPanel/ChatPanel.tsx` e procure por `[CRIAR-1]` até `[CRIAR-8]`.
+O painel só aparece se as **3 condições** abaixo forem verdadeiras ao mesmo tempo (chamamos isso de "triple-gate" — porta tripla):
 
-Exemplo de marker antes/depois:
+1. **`ragEnabled = true`** — você ligou o RAG na env var do backend (Passo 8.6).
+2. **`enableChat = true`** — você ligou o chat na env var do frontend (Passo 8.6).
+3. **URL termina com `?chat=1`** — você abriu o frontend com esse parâmetro (`/?chat=1`).
 
-```tsx
-// ANTES
-export const ChatPanel: React.FC = () => {
-  // [CRIAR-2] State para suggestion, loading, error
-  return null;
-};
+Se qualquer uma das 3 falhar, o painel **não aparece** (proteção de feature flag — controle fino de quem vê o chat).
+
+**Confira só que os arquivos existem:**
+
+```powershell
+Get-Item C:\Projetos\apex-rag-lab\app\frontend\src\Shell.tsx
+Get-Item C:\Projetos\apex-rag-lab\app\frontend\src\authConfig.ts
+# Esperado: 2 arquivos listados.
 ```
 
-```tsx
-// DEPOIS
-export const ChatPanel: React.FC = () => {
-  // [CRIAR-2] State para suggestion, loading, error
-  const [suggestion, setSuggestion] = useState<RagResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // ... resto preenchido nos markers seguintes
-```
-
-Os comentários inline indicam o tipo, o nome de variável e o handler esperado em cada marker. A `module.css` ao lado já contém todos os estilos — você só está plugando lógica e binding.
-
-## Passo 8.5 — Editar `app/frontend/src/Shell.tsx` + `authConfig.ts`
-
-Estes dois arquivos completam o triple-gate `ragEnabled && enableChat && ?chat=1` que decide se o `<ChatPanel />` aparece.
-
-**`Shell.tsx`** (4 markers):
-
-```tsx
-// ANTES
-// [CRIAR-1] Hook useChatQueryFlag (lê ?chat=1 da URL)
-// [CRIAR-2] Triple-gate na render
-return (
-  <Layout>{/* [CRIAR-3] mount condicional do <ChatPanel /> */}</Layout>
-);
-```
-
-```tsx
-// DEPOIS
-// [CRIAR-1] Hook useChatQueryFlag (lê ?chat=1 da URL)
-const chatFlag = useChatQueryFlag();
-// [CRIAR-2] Triple-gate na render
-const showChat = ragEnabled && enableChat && chatFlag;
-return (
-  <Layout>
-    {/* [CRIAR-3] mount condicional do <ChatPanel /> */}
-    {showChat && <ChatPanel />}
-  </Layout>
-);
-```
-
-**`authConfig.ts`** (3 markers):
-
-```ts
-// ANTES
-export interface AuthSetup {
-  // [CRIAR-1] Adicione ragEnabled?: boolean
-}
-// [CRIAR-2] Exporte ragEnabled lido de window.authSetup
-```
-
-```ts
-// DEPOIS
-export interface AuthSetup {
-  // [CRIAR-1] Adicione ragEnabled?: boolean
-  ragEnabled?: boolean;
-}
-// [CRIAR-2] Exporte ragEnabled lido de window.authSetup
-export const ragEnabled: boolean = (window as any).authSetup?.ragEnabled ?? false;
-```
-
-Os markers restantes (`[CRIAR-3]` em diante) propagam a flag em pontos pontuais — siga os comentários inline.
+> **Para curiosos (opcional, não exigido):** `Shell.tsx` tem 4 marcadores `[CRIAR-X]` mostrando o hook `useChatQueryFlag` (lê `?chat=1`) + triple-gate + render condicional. `authConfig.ts` tem 3 marcadores mostrando como a flag `ragEnabled` chega ao frontend via `/auth_setup`. **Pula se você não é dev** — você vai ver o triple-gate funcionar ao vivo no Passo 8.8 (abrir com e sem `?chat=1`).
 
 ## Passo 8.6 — Configurar env vars do RAG no `azd env`
 
