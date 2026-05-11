@@ -146,6 +146,51 @@ Esperado:
 [+] 600 documentos indexados com sucesso
 ```
 
+## Passo 10.5.5 — Sincronizar refs `[KB]` no seed `tickets.sql` (~5min)
+
+Antes de rodar as queries comparativas, alinhe os refs `[KB]` antigos do seed `tickets.sql` (no repo base `apex-helpsphere`) aos 8 PDFs Apex canônicos. Hoje o seed referencia 11 nomes legados (`politica-devolucoes.pdf`, `nfe-rejeicoes-comuns.pdf`, etc) que apontam para PDFs que **já não existem** no novo container `kbai`. Se o agente for consultar a fonte original do ticket, vai cair em "fonte indisponível" ao invés de citar o PDF Apex correto.
+
+**Mapeamento canônico** (também documentado em `apex-rag-lab/archive/sample-kb-pre-wave4/CONTEXT.md` linhas 73-87):
+
+| `[KB]` antigo no seed | Migra para PDF Apex |
+|---|---|
+| `politica-devolucoes` | `faq_pedidos_devolucao` (+ parcialmente `politica_reembolso_lojista`) |
+| `nfe-rejeicoes-comuns` | `runbook_sap_fi_integracao` |
+| `garantias-estendidas` | `faq_pedidos_devolucao` |
+| `troubleshooting-pdv` | `manual_pos_funcionamento` |
+| `arquitetura-integracao` | `runbook_sap_fi_integracao` |
+| `sped-fiscal-troubleshooting` | `politica_reembolso_lojista` |
+| `postmortem-blackfriday-2025` | `runbook_problemas_rede` |
+| `politica-doca-recebimento` | `manual_operacao_loja_v3` |
+| `politicas-rh-gestacao` | `politica_dados_lgpd` |
+| `retencoes-tributarias-pj` | `politica_reembolso_lojista` |
+| `sped-contribuicoes-erros` | `politica_reembolso_lojista` |
+
+**Como aplicar (no repo `apex-helpsphere` base):**
+
+```powershell
+# 1. Abrir o seed
+cd C:\Projetos\apex-helpsphere\data\seed
+code tickets.sql
+
+# 2. Find-and-replace seguindo a tabela acima. Padrão antigo:
+#    [KB] sample-kb politica-devolucoes.pdf
+#    → trocar para:
+#    [KB] kbai faq_pedidos_devolucao.pdf
+
+# 3. Validar que sobraram zero refs `sample-kb`:
+findstr /n "sample-kb" tickets.sql
+# Esperado: "FINDSTR: nenhuma ocorrência"
+
+# 4. Commit + bump v2.2.0 (delegar push para @devops):
+git add data/seed/tickets.sql
+git commit -m "chore: bump v2.2.0 — alinhar refs [KB] aos 8 PDFs Apex canônicos"
+```
+
+> **Nota pedagógica — por que esta etapa fica AQUI e não no apex-helpsphere upstream:** o seed `tickets.sql` foi escrito antes da Wave 4 (8 PDFs corporativos). O Lab Inter RAG é quem força essa convergência semântica. Manter o seed alinhado é cleanup de coerência, não bugfix — o app SaaS continua funcionando sem isso, mas o RAG citará fontes erradas.
+
+---
+
 ## Passo 10.6 — Queries comparativas (~10min)
 
 Aqui é onde o **Grand Finale brilha**. Queries que retornavam respostas vagas ou "não sei" com PDFs Microsoft Learn agora retornam **respostas corporativas precisas em pt-BR**.
