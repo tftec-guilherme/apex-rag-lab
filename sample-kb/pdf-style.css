@@ -1,0 +1,130 @@
+@page {
+  size: A4;
+  margin: 2.5cm 2cm;
+  @bottom-center {
+    content: "Apex Group · Documento confidencial · uso interno";
+    font-size: 8pt;
+    color: #666;
+  }
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-size: 8pt;
+    color: #666;
+  }
+}
+
+body {
+  font-family: "Segoe UI", "Inter", "Source Sans Pro", sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  color: #222;
+}
+
+h1 {
+  font-size: 22pt;
+  color: #1a3a6c;
+  border-bottom: 3px solid #1a3a6c;
+  padding-bottom: 8pt;
+  margin-top: 0;
+  page-break-after: avoid;
+}
+
+h2 {
+  font-size: 16pt;
+  color: #1a3a6c;
+  margin-top: 24pt;
+  page-break-after: avoid;
+  page-break-before: auto;
+}
+
+h3 {
+  font-size: 12.5pt;
+  color: #2d4d7d;
+  margin-top: 18pt;
+  page-break-after: avoid;
+}
+
+h4 {
+  font-size: 11pt;
+  color: #444;
+  margin-top: 14pt;
+  page-break-after: avoid;
+}
+
+p {
+  text-align: justify;
+  margin: 6pt 0;
+  orphans: 3;
+  widows: 3;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 12pt 0;
+  width: 100%;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+
+th {
+  background-color: #1a3a6c;
+  color: white;
+  padding: 6pt 8pt;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #1a3a6c;
+}
+
+td {
+  padding: 5pt 8pt;
+  border: 1px solid #ccc;
+  vertical-align: top;
+}
+
+tr:nth-child(even) td {
+  background-color: #f7f7f7;
+}
+
+code {
+  font-family: "JetBrains Mono", "Consolas", "IBM Plex Mono", monospace;
+  font-size: 9.5pt;
+  background-color: #f4f4f4;
+  padding: 1pt 4pt;
+  border-radius: 2pt;
+}
+
+pre {
+  background-color: #f4f4f4;
+  padding: 10pt;
+  border-left: 3px solid #1a3a6c;
+  overflow-x: auto;
+  font-size: 9pt;
+  page-break-inside: avoid;
+}
+
+blockquote {
+  border-left: 4px solid #d4a017;
+  padding: 4pt 12pt;
+  margin: 12pt 0;
+  background-color: #fdf9ef;
+  color: #555;
+}
+
+ol, ul {
+  margin: 6pt 0;
+  padding-left: 24pt;
+}
+
+li {
+  margin: 3pt 0;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 20pt 0;
+}
+
+strong {
+  color: #1a3a6c;
+}
