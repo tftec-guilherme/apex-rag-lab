@@ -35,10 +35,20 @@ aoai = AzureOpenAI(
     azure_endpoint=AOAI_ENDPOINT,
 )
 
+# text-embedding-3-large aceita no máximo 8192 tokens por input. Chunks gerados
+# pelo Document Intelligence (prebuilt-layout, 6000 chars overlap 200) podem
+# ultrapassar quando o PDF tem páginas densas. Truncamos a ~28000 chars (~7000
+# tokens com margem de segurança) antes de chamar o endpoint para evitar
+# BadRequest 400. Em produção, usar tiktoken para contagem exata de tokens.
+MAX_EMBED_CHARS = 28000
+
 def embed_batch(texts: list[str]) -> list[list[float]]:
-    """Gera embeddings em batch (Azure OpenAI suporta até 16 inputs)."""
+    """Gera embeddings em batch (Azure OpenAI suporta até 16 inputs).
+    Trunca cada texto a MAX_EMBED_CHARS (~7000 tokens) — text-embedding-3-large
+    aceita max 8192 tokens; chunks grandes do DI podem ultrapassar."""
+    truncated = [t[:MAX_EMBED_CHARS] for t in texts]
     response = aoai.embeddings.create(
-        input=texts,
+        input=truncated,
         model="text-embedding-3-large"
     )
     return [item.embedding for item in response.data]
