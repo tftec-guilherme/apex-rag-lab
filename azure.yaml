@@ -2,7 +2,7 @@
 
 # HelpSphere — Apex Retail | Disciplina 06 (Story 06.5a)
 # Forked from Azure-Samples/azure-search-openai-demo @ SHA 95ce0c9... (ver helpsphere/DECISION-LOG.md)
-name: helpsphere-template
+name: rg-helpsphere-saas
 metadata:
   template: azure-search-openai-demo@0.0.3
 requiredVersions:
