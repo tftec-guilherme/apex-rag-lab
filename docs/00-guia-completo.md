@@ -2067,10 +2067,12 @@ import os, json, time, requests
 FUNC_URL = "https://func-helpsphere-rag-{rand}.azurewebsites.net"
 FUNC_KEY = os.environ["FUNC_KEY"]
 
-def evaluate_query(query: str, expected_sources: list[str]) -> dict:
+def evaluate_query(query: str, expected_sources: list[str], idx: int = 0) -> dict:
+    # ticket_id 'eval-batch-{idx}' isola telemetria de eval real do Function App.
+    # function_app.py usa ticket_id apenas como echo/telemetria — qualquer string serve.
     start = time.time()
     response = requests.post(
-        f"{FUNC_URL}/api/tickets/eval/suggest",
+        f"{FUNC_URL}/api/tickets/eval-batch-{idx}/suggest",
         headers={"x-functions-key": FUNC_KEY, "Content-Type": "application/json"},
         json={"description": query, "attachment_urls": []},
     )
@@ -2097,8 +2099,8 @@ def main():
         dataset = [json.loads(l) for l in f]
 
     results = []
-    for item in dataset:
-        r = evaluate_query(item["query"], item["expected_sources"])
+    for idx, item in enumerate(dataset):
+        r = evaluate_query(item["query"], item["expected_sources"], idx=idx)
         print(f"  P@5={r['precision_at_5']:.2f}  latency={r['latency_ms']:.0f}ms  tokens={r['tokens']}")
         results.append(r)
 
@@ -2357,19 +2359,21 @@ Esperado:
 
 ## Passo 10.5 — Recriar Index e re-popular embeddings (~15min)
 
-O índice `helpsphere-kb` já existe com schema correto. Vamos limpar os documentos antigos e re-popular:
+O índice `helpsphere-kb` já existe com schema correto, mas pode ter documentos antigos (de execuções anteriores ou seed inicial). A forma mais simples e confiável de zerar é **recriar o index do zero** — o script `create_search_index.py` é idempotente: deleta o index existente e recria com o schema atualizado.
 
 ```powershell
-# Limpar todos os docs do índice (mas mantém o schema)
-$INDEX = "helpsphere-kb"
-curl.exe -X POST `
-  "https://$($env:SEARCH_NAME).search.windows.net/indexes/$INDEX/docs/index?api-version=2024-07-01" `
-  -H "Content-Type: application/json" `
-  -H "api-key: $($env:SEARCH_ADMIN_KEY)" `
-  --data-binary '@delete-all.json'
+# Recriar index do zero (drop + create) — mesmo schema, sem docs
+python snippets/create_search_index.py
 ```
 
-(Ou simplesmente recrie o index — `create_search_index.py` é idempotente.)
+Esperado:
+
+```
+[i] Index existente 'helpsphere-kb' deletado
+[+] Index 'helpsphere-kb' criado com vector + semantic ranker
+```
+
+> **Por que não um DELETE bulk via REST?** Bulk delete na Azure AI Search exige passar a lista de IDs de cada doc (não existe "delete all" nativo). Recriar o index é mais simples, mais rápido e garante schema atualizado caso `create_search_index.py` tenha mudado entre execuções.
 
 Agora re-rode o populator:
 
