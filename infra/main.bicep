@@ -915,9 +915,12 @@ var ticketsAudience = !empty(serverAppId)
 // a partir de `containerApps.outputs.defaultDomain` + `backendServiceName` (mesmo padrão do `name` em acaBackend).
 var backendAcaName = !empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesContainerApps}backend-${resourceToken}'
 var backendAcaFqdn = (deploymentTarget == 'containerapps') ? 'https://${backendAcaName}.${containerApps!.outputs.defaultDomain}' : ''
+// Story 06.26: incluir frontendAppServiceFqdn — tickets-service e chamado direto
+// pelo frontend App Service (CORS cross-origin). Sem isso o preflight retorna 405.
 var ticketsAllowedOrigins = union(
   allowedOrigins,
   !empty(backendAcaFqdn) ? [ backendAcaFqdn ] : [],
+  [ frontendAppServiceFqdn ],
   additionalCorsOrigins
 )
 
