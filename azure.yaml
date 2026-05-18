@@ -22,6 +22,31 @@ services:
     host: containerapp
     docker:
       remoteBuild: true
+  # HelpSphere — Story 06.26: frontend agora vive em host separado (App Service Linux Node 22)
+  # conforme diagrama de arquitetura do Lab Inter (3 hosts: App Service + 2 ACA).
+  # Build Vite roda via hook `prepackage` deste service (npm install && npm run build),
+  # publica conteúdo de app/frontend/build/ no App Service. Backend consome só /chat e /ask
+  # via CORS (configurado no Bicep app-helpsphere-{env}).
+  frontend:
+    project: ./app/frontend
+    language: js
+    host: appservice
+    hooks:
+      prepackage:
+        windows:
+          shell: pwsh
+          run: npm install; npm run build
+          interactive: false
+          continueOnError: false
+        posix:
+          shell: sh
+          run: npm install && npm run build
+          interactive: false
+          continueOnError: false
+  # HelpSphere — Story 06.26: Vite build movido pro service `frontend` (App Service Linux Node 22).
+  # Backend agora serve só API (/chat, /ask, /auth_setup, etc) — sem servir bundle estático.
+  # Hook `prebuild` (que rodava `cd ../frontend; npm install; npm run build`) foi REMOVIDO.
+  # Hook `prepackage` mantido pq referenciado em cenário host=appservice (legacy upstream).
   backend:
     project: ./app/backend
     language: py
@@ -42,29 +67,6 @@ services:
         posix:
           shell: sh
           run:  cd ../frontend;npm install;npm run build
-          interactive: false
-          continueOnError: false
-      # This hook is called when Azure Container Apps is the host.
-      # Decisão #19 (runtime config): a URL do tickets-service é exposta pelo backend
-      # via `/auth_setup.ticketsApiBase` (lendo env `TICKETS_BACKEND_URI`), então o build
-      # do frontend é environment-agnóstico — o mesmo bundle serve dev/staging/prod.
-      # Removida a injeção build-time de `VITE_API_TICKETS_URL` (eliminava pegadinha
-      # "tickets retornam 410 Gone" quando aluno esquecia de exportar a env antes do build).
-      prebuild:
-        windows:
-          shell: pwsh
-          run: |
-            cd ../frontend
-            npm install
-            npm run build
-          interactive: false
-          continueOnError: false
-        posix:
-          shell: sh
-          run: |
-            cd ../frontend
-            npm install
-            npm run build
           interactive: false
           continueOnError: false
   document-extractor:

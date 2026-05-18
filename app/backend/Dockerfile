@@ -15,6 +15,11 @@ RUN apt-get update \
 
 WORKDIR /app
 
+# HelpSphere — Story 06.26: pós-migração, ./static/ vai estar vazia (ou inexistente)
+# porque o frontend Vite agora vive em App Service separado (service `frontend` em
+# azure.yaml). Mantemos o COPY ./ /app por simplicidade — diff mínimo vs upstream
+# Azure-Samples/azure-search-openai-demo, evita merge conflicts. Cleanup completo
+# (remover refs a static/ no app Python) virá quando upstream também migrar.
 COPY ./ /app
 
 RUN python -m pip install -r requirements.txt

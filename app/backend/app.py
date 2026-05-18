@@ -822,6 +822,9 @@ async def close_clients():
 
 def create_app():
     app = Quart(__name__)
+    # Story 06.26: CORS via env ALLOWED_ORIGIN (separator `;`) — codigo upstream
+    # ja existente em L873-877 cuida. Bicep popula com FRONTEND_URI do App Service
+    # app-helpsphere-{env} (via param allowedOrigins -> env ALLOWED_ORIGIN no acaBackend).
     app.register_blueprint(bp)
     app.register_blueprint(chat_history_cosmosdb_bp)
     app.register_blueprint(tickets_bp)  # HelpSphere — Story 06.5a Sessão 2.3

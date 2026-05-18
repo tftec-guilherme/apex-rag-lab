@@ -461,6 +461,18 @@ param tokenAudienceFormat string = 'v2'
 @description('SQL Database autoPauseDelay em minutos. -1 = sempre online. 60 = pausa apos 60min idle.')
 param sqlAutoPauseDelay int = -1
 
+// HelpSphere — Story 06.26: frontend App Service host (Vite SPA + server.js Express)
+// Hospeda o bundle estatico em host separado do `acaBackend` (Container App). Alinha
+// com diagrama Story 06.13 (3 hosts: App Service frontend + 2 ACA backend/tickets).
+@description('Nome do App Service que hospeda o frontend Vite (server.js Express). Default literal `app-helpsphere-{env}` alinhado ao diagrama.')
+param frontendAppServiceName string = ''
+
+@description('Nome do App Service Plan dedicado ao frontend (separa custo/scale do backend). Default literal `asp-helpsphere-{env}`.')
+param frontendAppServicePlanName string = ''
+
+@description('SKU do App Service Plan do frontend. Default B1 (Basic, suficiente para estatico).')
+param frontendAppServicePlanSku string = 'B1'
+
 // Configure CORS for allowing different web apps to use the backend
 // For more information please see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 var msftAllowedOrigins = [ 'https://portal.azure.com', 'https://ms.portal.azure.com' ]
@@ -558,6 +570,76 @@ module appServicePlan 'core/host/appserviceplan.bicep' = if (deploymentTarget ==
     kind: 'linux'
   }
 }
+
+// ============================================================================
+// HelpSphere — Story 06.26: Frontend App Service (Vite SPA + server.js Express)
+// Host separado do `acaBackend` (Container App). Alinha com diagrama Story 06.13.
+// SEMPRE provisionado (independente de deploymentTarget) — o backend pode ser
+// appservice OU containerapps, o frontend e desacoplado em ambos cenarios.
+// ============================================================================
+module frontendAppServicePlan 'core/host/appserviceplan.bicep' = {
+  name: 'frontend-appserviceplan'
+  scope: resourceGroup
+  params: {
+    name: !empty(frontendAppServicePlanName) ? frontendAppServicePlanName : 'asp-helpsphere-${environmentName}'
+    location: location
+    tags: tags
+    sku: {
+      name: frontendAppServicePlanSku
+      capacity: 1
+    }
+    kind: 'linux'
+  }
+}
+
+// FQDN do frontend computado deterministicamente para evitar ciclo:
+// `acaBackend` (declarado adiante) precisa do URI no `corsOrigins`, mas
+// `frontendAppService` precisaria do URI do `acaBackend` em VITE_BACKEND_URI.
+// Quebramos o ciclo construindo ambos pelos nomes (App Service default FQDN
+// e o pattern usado em `backendAcaFqdn` mais abaixo).
+var frontendAppServiceResolvedName = !empty(frontendAppServiceName) ? frontendAppServiceName : 'app-helpsphere-${environmentName}'
+var frontendAppServiceFqdn = 'https://${frontendAppServiceResolvedName}.azurewebsites.net'
+
+module frontendAppService 'core/host/appservice.bicep' = {
+  name: 'frontend-appservice'
+  scope: resourceGroup
+  params: {
+    name: frontendAppServiceResolvedName
+    location: location
+    tags: union(tags, { 'azd-service-name': 'frontend' })
+    appServicePlanId: frontendAppServicePlan.outputs.id
+    runtimeName: 'node'
+    runtimeVersion: '22-lts'
+    // Vite build acontece via prebuild hook do azd (npm run build local); o Oryx
+    // server-side NAO deve recompilar o bundle (poderia divergir entre prebuild
+    // e build do servidor). server.js Express serve `dist/` estatico + proxia API.
+    appCommandLine: 'node server.js'
+    scmDoBuildDuringDeployment: false
+    managedIdentity: false
+    // clientAppId='' suprime configAuth (Easy Auth) — frontend serve LoginGate
+    // MSAL no client-side; auth real e cobrada pelo backend `acaBackend` via
+    // header Authorization.
+    clientAppId: ''
+    serverAppId: ''
+    enableUnauthenticatedAccess: true
+    disableAppServicesAuthentication: true
+    publicNetworkAccess: publicNetworkAccess
+    // VITE_BACKEND_URI computado por nome (sem referenciar module outputs — ciclo).
+    // Para containerapps usa o mesmo pattern de `backendAcaFqdn` declarado adiante.
+    // Para appservice usa o nome default do backend (mesmo pattern do `name` no module backend).
+    appSettings: {
+      WEBSITE_NODE_DEFAULT_VERSION: '~22'
+      VITE_BACKEND_URI: (deploymentTarget == 'containerapps')
+        ? 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesContainerApps}backend-${resourceToken}'}.${containerApps!.outputs.defaultDomain}'
+        : 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesAppService}backend-${resourceToken}'}.azurewebsites.net'
+    }
+  }
+}
+
+// CORS origins consolidados — inclui frontend host separado (Story 06.26).
+// Usado por `acaBackend` para permitir o XHR de `app-helpsphere-{env}.azurewebsites.net`.
+// Usa FQDN computado por nome (sem referenciar module outputs) — evita ciclo.
+var corsOrigins = union(allowedOrigins, [ frontendAppServiceFqdn ])
 
 // Determine which ADLS storage account name to use (existing or provisioned)
 var adlsStorageAccountNameResolved = useExistingAdlsStorage ? existingAdlsStorage.name : (useCloudIngestionAcls ? adlsStorage!.outputs.name : '')
@@ -690,7 +772,8 @@ module backend 'core/host/appservice.bicep' = if (deploymentTarget == 'appservic
     managedIdentity: true
     virtualNetworkSubnetId: usePrivateEndpoint ? isolation!.outputs.appSubnetId : ''
     publicNetworkAccess: publicNetworkAccess
-    allowedOrigins: allowedOrigins
+    // Story 06.26: corsOrigins inclui frontend host separado (app-helpsphere-{env}).
+    allowedOrigins: corsOrigins
     clientAppId: clientAppId
     serverAppId: serverAppId
     enableUnauthenticatedAccess: enableUnauthenticatedAccess
@@ -751,7 +834,8 @@ module acaBackend 'core/host/container-app-upsert.bicep' = if (deploymentTarget 
     containerCpuCoreCount: '1.0'
     containerMemory: '2Gi'
     containerMinReplicas: usePrivateEndpoint ? 1 : 0
-    allowedOrigins: allowedOrigins
+    // Story 06.26: corsOrigins inclui frontend host separado (app-helpsphere-{env}).
+    allowedOrigins: corsOrigins
     env: union(appEnvVariables, {
       // For using managed identity to access Azure resources. See https://github.com/microsoft/azure-container-apps/issues/442
       AZURE_CLIENT_ID: (deploymentTarget == 'containerapps') ? acaIdentity!.outputs.clientId : ''
@@ -761,6 +845,9 @@ module acaBackend 'core/host/container-app-upsert.bicep' = if (deploymentTarget 
       // body retorna `successor_uri: null` — viola RFC 5988/8288 e atrapalha auto-discovery
       // do tickets-service .NET pelos clientes legacy.
       TICKETS_BACKEND_URI: (deploymentTarget == 'containerapps') ? acaTickets!.outputs.uri : ''
+      // Story 06.26: CORS via env ALLOWED_ORIGIN (separator ';') que app.py L873 ja le.
+      // corsOrigins inclui FRONTEND_URI do App Service app-helpsphere-{env}.
+      ALLOWED_ORIGIN: join(corsOrigins, ';')
     })
     secrets: useAuthentication ? {
       azureclientappsecret: clientAppSecret
@@ -1892,6 +1979,10 @@ output AZURE_USE_AUTHENTICATION bool = useAuthentication
 
 output BACKEND_URI string = deploymentTarget == 'appservice' ? backend!.outputs.uri : acaBackend!.outputs.uri
 
+// Story 06.26: FRONTEND_URI exposto para azd env + hooks (npm run build prebuild,
+// smoke tests, docs). Frontend e provisionado sempre (independente de deploymentTarget).
+output FRONTEND_URI string = frontendAppService.outputs.uri
+
 // HelpSphere — Story 06.5c.3 (B-PRACTICAL): tickets-service URI para smoke test
 // Nota: AZURE_TICKETS_CLIENT_ID NÃO é exportado (max-outputs=64). UMI clientId já é
 // passado via env var AZURE_CLIENT_ID dentro do ACA tickets (suficiente para MI auth).
@@ -1917,7 +2008,10 @@ output AZURE_SQL_BACKEND_MI_NAME string = useSqlServer
 output AZURE_SQL_TICKETS_MI_NAME string = useSqlServer && deploymentTarget == 'containerapps'
   ? acaTicketsIdentityName
   : ''
-output AZURE_LOAD_SEED_DATA bool = loadSeedData
+// Story 06.26: AZURE_LOAD_SEED_DATA removido como output para abrir slot para FRONTEND_URI.
+// Param-echo do `loadSeedData` (input ${AZURE_LOAD_SEED_DATA=true}). Consumers leem direto
+// do azd env via `azd env get-value AZURE_LOAD_SEED_DATA` (mesmo valor, sem round-trip ARM).
+// ARM hard limit: max 64 outputs por template.
 
 // HelpSphere v2.1.0 (Sessão 9.5) — params parametrizados (pythonVersion, additionalCorsOrigins,
 // skipPrepdocs, enableChat, tokenAudienceFormat, sqlAutoPauseDelay) NÃO são exportados como outputs:
