@@ -133,7 +133,16 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
         targetPort: targetPort
         transport: 'auto'
         corsPolicy: {
+          // Story 06.26 Lab Inter: CORS completo no ACA ingress (browser exige
+          // mais que allowedOrigins). Sem allowedMethods/allowedHeaders/maxAge
+          // preflight OPTIONS retornava 405 → frontend cross-origin nao chamava
+          // backend. Validado ao vivo 2026-05-18.
           allowedOrigins: union([ 'https://portal.azure.com', 'https://ms.portal.azure.com' ], allowedOrigins)
+          allowedMethods: [ 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH' ]
+          allowedHeaders: [ '*' ]
+          exposeHeaders: []
+          maxAge: 600
+          allowCredentials: true
         }
       } : null
       dapr: daprEnabled ? {

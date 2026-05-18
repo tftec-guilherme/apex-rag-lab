@@ -303,7 +303,7 @@
       "value": "${AZURE_ENABLE_GLOBAL_DOCUMENT_ACCESS=false}"
     },
     "enableUnauthenticatedAccess": {
-      "value": "${AZURE_ENABLE_UNAUTHENTICATED_ACCESS=false}"
+      "value": "${AZURE_ENABLE_UNAUTHENTICATED_ACCESS=true}"
     },
     "authTenantId": {
       "value": "${AZURE_AUTH_TENANT_ID}"
