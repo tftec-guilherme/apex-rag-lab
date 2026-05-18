@@ -33,15 +33,16 @@ services:
     host: appservice
     hooks:
       prepackage:
-        # Story 06.26 v3: exportar VITE_BACKEND_URI do azd env ANTES do vite build.
-        # Vite substitui import.meta.env.VITE_BACKEND_URI em BUILD TIME. Sem export,
-        # vira "" e fetch /auth_setup vai pro frontend (HTML) → JSON parse crash →
-        # tela branca. azd env get-value BACKEND_URI puxa do output Bicep.
+        # Story 06.26 v4: gera .env.production ANTES do vite build.
+        # Vite le .env.production automaticamente — nao depende de shell env
+        # propagation (que falhava em alguns ambientes azd). Mais robusto que
+        # `$env:VITE_BACKEND_URI = ...` que nao propagava pro npm sub-process.
         windows:
           shell: pwsh
           run: |
-            $env:VITE_BACKEND_URI = (azd env get-value BACKEND_URI)
-            Write-Host "Building frontend with VITE_BACKEND_URI=$env:VITE_BACKEND_URI"
+            $uri = azd env get-value BACKEND_URI
+            Write-Host "Generating .env.production with VITE_BACKEND_URI=$uri"
+            Set-Content -Path .env.production -Value "VITE_BACKEND_URI=$uri"
             npm install
             npm run build
           interactive: false
@@ -49,8 +50,9 @@ services:
         posix:
           shell: sh
           run: |
-            export VITE_BACKEND_URI=$(azd env get-value BACKEND_URI)
-            echo "Building frontend with VITE_BACKEND_URI=$VITE_BACKEND_URI"
+            BACKEND_URI=$(azd env get-value BACKEND_URI)
+            echo "Generating .env.production with VITE_BACKEND_URI=$BACKEND_URI"
+            echo "VITE_BACKEND_URI=$BACKEND_URI" > .env.production
             npm install && npm run build
           interactive: false
           continueOnError: false
