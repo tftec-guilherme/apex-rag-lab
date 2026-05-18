@@ -218,8 +218,15 @@ async def format_as_ndjson(r: AsyncGenerator[dict, None]) -> AsyncGenerator[str,
 
 
 @bp.route("/chat", methods=["POST"])
-@authenticated
-async def chat(auth_claims: dict[str, Any]):
+async def chat():
+    # Story 06.26: DEMO BYPASS — mesmo pattern do /chat/rag. Mock auth_claims com
+    # tenant fixo via env DEMO_TENANT_ID. Easy Auth ACA esta disabled — auth real
+    # so via LoginGate frontend MSAL (Story 06.27 deferred cuida do revert futuro).
+    auth_claims: dict[str, Any] = {
+        "extn.app_tenant_id": os.environ.get("DEMO_TENANT_ID", "11111111-1111-1111-1111-111111111111"),
+        "name": "demo-user",
+        "sub": "demo-sub",
+    }
     if not request.is_json:
         return jsonify({"error": "request must be json"}), 415
     request_json = await request.get_json()
@@ -247,8 +254,13 @@ async def chat(auth_claims: dict[str, Any]):
 
 
 @bp.route("/chat/stream", methods=["POST"])
-@authenticated
-async def chat_stream(auth_claims: dict[str, Any]):
+async def chat_stream():
+    # Story 06.26: DEMO BYPASS — mesmo pattern do /chat (acima).
+    auth_claims: dict[str, Any] = {
+        "extn.app_tenant_id": os.environ.get("DEMO_TENANT_ID", "11111111-1111-1111-1111-111111111111"),
+        "name": "demo-user",
+        "sub": "demo-sub",
+    }
     if not request.is_json:
         return jsonify({"error": "request must be json"}), 415
     request_json = await request.get_json()
