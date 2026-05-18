@@ -219,74 +219,39 @@ async def format_as_ndjson(r: AsyncGenerator[dict, None]) -> AsyncGenerator[str,
 
 @bp.route("/chat", methods=["POST"])
 async def chat():
-    # Story 06.26: DEMO BYPASS — mesmo pattern do /chat/rag. Mock auth_claims com
-    # tenant fixo via env DEMO_TENANT_ID. Easy Auth ACA esta disabled — auth real
-    # so via LoginGate frontend MSAL (Story 06.27 deferred cuida do revert futuro).
-    auth_claims: dict[str, Any] = {
-        "extn.app_tenant_id": os.environ.get("DEMO_TENANT_ID", "11111111-1111-1111-1111-111111111111"),
-        "name": "demo-user",
-        "sub": "demo-sub",
-    }
-    if not request.is_json:
-        return jsonify({"error": "request must be json"}), 415
-    request_json = await request.get_json()
-    context = request_json.get("context", {})
-    context["auth_claims"] = auth_claims
-    try:
-        approach: Approach = cast(Approach, current_app.config[CONFIG_CHAT_APPROACH])
-
-        # If session state is provided, persists the session state,
-        # else creates a new session_id depending on the chat history options enabled.
-        session_state = request_json.get("session_state")
-        if session_state is None:
-            session_state = create_session_id(
-                current_app.config[CONFIG_CHAT_HISTORY_COSMOS_ENABLED],
-                current_app.config[CONFIG_CHAT_HISTORY_BROWSER_ENABLED],
-            )
-        result = await approach.run(
-            request_json["messages"],
-            context=context,
-            session_state=session_state,
-        )
-        return jsonify(result)
-    except Exception as error:
-        return error_response(error, "/chat")
+    # Story 06.26 Lab Inter — fallback amigavel.
+    # /chat upstream (ChatReadRetrieveReadApproach) depende de Azure OpenAI + AI Search,
+    # nao provisionados em SaaS-only (DEPLOY_IA_STACK=false). Retornamos resposta
+    # didatica apontando para o painel RAG correto (?chat=1) em vez de 500 AttributeError.
+    return jsonify({
+        "message": {
+            "content": (
+                "Este chat (/chat upstream) e do template azure-search-openai-demo "
+                "e exige Azure OpenAI provisionado (DEPLOY_IA_STACK=true). "
+                "\n\nNo Lab Intermediario use o painel RAG flutuante: adicione "
+                "`?chat=1` na URL do app. Ele chama o endpoint /chat/rag que "
+                "esta conectado a Function App externa de RAG (Parte 7 do guia)."
+            ),
+            "role": "assistant"
+        },
+        "context": {"data_points": [], "thoughts": []},
+        "session_state": None
+    }), 200
 
 
 @bp.route("/chat/stream", methods=["POST"])
 async def chat_stream():
-    # Story 06.26: DEMO BYPASS — mesmo pattern do /chat (acima).
-    auth_claims: dict[str, Any] = {
-        "extn.app_tenant_id": os.environ.get("DEMO_TENANT_ID", "11111111-1111-1111-1111-111111111111"),
-        "name": "demo-user",
-        "sub": "demo-sub",
-    }
-    if not request.is_json:
-        return jsonify({"error": "request must be json"}), 415
-    request_json = await request.get_json()
-    context = request_json.get("context", {})
-    context["auth_claims"] = auth_claims
-    try:
-        approach: Approach = cast(Approach, current_app.config[CONFIG_CHAT_APPROACH])
-
-        # If session state is provided, persists the session state,
-        # else creates a new session_id depending on the chat history options enabled.
-        session_state = request_json.get("session_state")
-        if session_state is None:
-            session_state = create_session_id(
-                current_app.config[CONFIG_CHAT_HISTORY_COSMOS_ENABLED],
-                current_app.config[CONFIG_CHAT_HISTORY_BROWSER_ENABLED],
-            )
-        result = await approach.run_stream(
-            request_json["messages"],
-            context=context,
-            session_state=session_state,
-        )
-        response = await make_response(format_as_ndjson(result))
-        response.timeout = None  # type: ignore
-        response.mimetype = "application/json-lines"
-        return response
-    except Exception as error:
+    # Story 06.26 Lab Inter — fallback amigavel (mesmo padrao /chat acima).
+    return jsonify({
+        "message": {
+            "content": "Use ?chat=1 na URL para o painel RAG. /chat/stream upstream nao disponivel em SaaS-only.",
+            "role": "assistant"
+        },
+        "context": {"data_points": [], "thoughts": []},
+        "session_state": None
+    }), 200
+    # Codigo upstream desabilitado abaixo (mantido como referencia, nao executado).
+    if False:
         return error_response(error, "/chat")
 
 

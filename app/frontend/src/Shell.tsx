@@ -32,12 +32,10 @@ const buildNav = (chatEnabled: boolean): { section: string; items: NavItem[] }[]
             ] as NavItem[]
         }
     ];
-    if (chatEnabled) {
-        sections.push({
-            section: "Inteligência",
-            items: [{ to: "/chat", label: "Assistente IA", description: "Chat RAG sobre playbooks" }]
-        });
-    }
+    // Story 06.26: nav item /chat REMOVIDO (endpoint upstream incompativel com
+    // SaaS-only). RAG chat agora SO via painel flutuante `?chat=1` (ChatPanel
+    // que chama /chat/rag — Function App externa Lab Inter). Aluno acessa por
+    // botao no TicketDetail OU adicionando ?chat=1 manualmente na URL.
     return sections;
 };
 
@@ -112,9 +110,15 @@ const ShellLayout = () => {
     const [chatPanelClosed, setChatPanelClosed] = useState<boolean>(false);
     // [CRIAR-X 3]: triple-gate decide se o ChatPanel monta — TODAS as 3 flags devem estar true: (a) ragEnabled (backend RAG_ENABLED), (b) enableChat (toggle global de chat — preserva consistência com nav), (c) chatQueryActive (flag ?chat=1 na URL). Plus !chatPanelClosed permite fechar manualmente sem reset da URL.
     // Hint: useMemo(() => ragEnabled && enableChat && chatQueryActive && !chatPanelClosed, [chatQueryActive, chatPanelClosed])
+    // Story 06.26: ChatPanel default-on. Triple-gate removido — gating reduzido a:
+    //   - ragEnabled (backend RAG_ENABLED=true, sempre populado no Lab Inter)
+    //   - !chatPanelClosed (user pode fechar manualmente clicando X no painel)
+    // Sem precisar mais ?chat=1 na URL — painel aparece automatico no Lab Inter.
+    // Mantemos chatQueryActive hook por backward-compat (cosmetico).
+    void chatQueryActive;
     const chatPanelVisible = useMemo(
-        () => ragEnabled && enableChat && chatQueryActive && !chatPanelClosed,
-        [chatQueryActive, chatPanelClosed]
+        () => ragEnabled && !chatPanelClosed,
+        [chatPanelClosed]
     );
 
     const navLinkClass = ({ isActive }: { isActive: boolean }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ""}`;
