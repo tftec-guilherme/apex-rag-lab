@@ -471,7 +471,10 @@ param frontendAppServiceName string = ''
 param frontendAppServicePlanName string = ''
 
 @description('SKU do App Service Plan do frontend. Default B1 (Basic, suficiente para estatico).')
-param frontendAppServicePlanSku string = 'B1'
+// Story 06.26: B3 (7GB RAM) eh minimo viavel para vite build server-side com
+// 4227 modulos. B1 (1.75GB) e B2 (3.5GB) sofrem OOM no `npm run build` mesmo
+// com NODE_OPTIONS=1536. Validado ao vivo 2026-05-18: B3 build em ~8.5min OK.
+param frontendAppServicePlanSku string = 'B3'
 
 // Configure CORS for allowing different web apps to use the backend
 // For more information please see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS

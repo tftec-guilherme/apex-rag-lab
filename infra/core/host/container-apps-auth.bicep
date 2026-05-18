@@ -35,7 +35,14 @@ resource auth 'Microsoft.App/containerApps/authConfigs@2024-10-02-preview' = {
   name: 'current'
   properties: {
     platform: {
-      enabled: true
+      // Story 06.26: quando enableUnauthenticatedAccess=true, desabilita Easy Auth
+      // TOTALMENTE (platform.enabled: false). AllowAnonymous nao basta — ACA ainda
+      // retorna 401 em endpoints "protegidos" mesmo no modo Anonymous. Validado
+      // ao vivo 2026-05-18 (smoke E2E via curl). Auth real e feito por:
+      //   1. LoginGate frontend MSAL (bloqueia rotas no client-side)
+      //   2. Python @authenticated em endpoints sensiveis (tickets, /chat legacy)
+      //   3. /chat/rag tem bypass DEMO_TENANT_ID (Story 06.27 deferred)
+      enabled: !enableUnauthenticatedAccess
     }
     globalValidation: {
       redirectToProvider: 'azureactivedirectory'
