@@ -305,7 +305,11 @@ param enforceAccessControl bool = false
 // https://learn.microsoft.com/azure/app-service/overview-authentication-authorization
 param disableAppServicesAuthentication bool = false
 param enableGlobalDocuments bool = false
-param enableUnauthenticatedAccess bool = false
+// HelpSphere Lab Intermediario: Easy Auth fica em AllowAnonymous mode (default true).
+// Auth real e feito no frontend (LoginGate + MSAL) e em endpoints sensiveis via
+// @authenticated do Python (tickets, /chat, /chat/stream). O bypass DEMO em /chat/rag
+// funciona porque Easy Auth nao bloqueia mais antes do Python.
+param enableUnauthenticatedAccess bool = true
 param serverAppId string = ''
 @secure()
 param serverAppSecret string = ''
