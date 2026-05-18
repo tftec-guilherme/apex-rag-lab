@@ -73,7 +73,8 @@ interface AuthSetup {
 
 // Fetch the auth setup JSON data from the API if not already cached
 async function fetchAuthSetup(): Promise<AuthSetup> {
-    const response = await fetch("/auth_setup");
+    // Story 06.26: prefixa BACKEND_URI (vazio em dev → Vite proxy; URL absoluta em prod).
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URI ?? ""}/auth_setup`);
     if (!response.ok) {
         throw new Error(`auth setup response was not ok: ${response.status}`);
     }

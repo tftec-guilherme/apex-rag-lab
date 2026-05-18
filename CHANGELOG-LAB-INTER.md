@@ -8,6 +8,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [Unreleased] — Story 06.26 (Frontend Host Separado)
+
+### Added
+- **App Service `app-helpsphere-{env}` Linux Node 22 (B1)** — frontend Vite agora roda em host próprio (Story 06.26). Bicep cria `Microsoft.Web/sites` + `Microsoft.Web/serverfarms`. Output `FRONTEND_URI` populado no `.env` do azd.
+- **`app/frontend/server.js`** — Express simples (estático + SPA fallback) para rodar Vite build em App Service.
+- **CORS reflectente totalmente aberto no backend** — `@app.before_request` (preflight OPTIONS → 204) + `@app.after_request` (devolve `Origin` do request como `Access-Control-Allow-Origin`). SEM whitelist (que sempre dava galho quando `FRONTEND_URI` mudava). Compatível com Bearer JWT (`Allow-Credentials: true`). Substitui middleware upstream baseado em `ALLOWED_ORIGIN`. Import `quart_cors` removido (não mais usado).
+- **Easy Auth do backend → AllowAnonymous** — param `enableUnauthenticatedAccess` default agora `true`. Auth real via LoginGate frontend (MSAL) + `@authenticated` decorator Python em endpoints sensíveis (tickets, /chat, /chat/stream). /chat/rag tem bypass DEMO via `DEMO_TENANT_ID` (Story 06.27 deferred — tech debt aceito).
+
+### Changed
+- **`vite.config.ts`** — `outDir: "dist"` (era `../backend/static`). Vite build agora gera bundle local ao frontend.
+- **`api/api.ts` + `api/rag.ts` + `authConfig.ts`** — `BACKEND_URI` vem de `import.meta.env.VITE_BACKEND_URI` (injetado pelo App Service appSettings). Em dev permanece `""` (Vite proxy cobre).
+- **`azure.yaml`** — adicionado service `frontend` (host: appservice, language: js). Hook `prebuild` (build Vite) removido do service `backend`.
+- **`Dockerfile backend`** — comentário explicativo sobre `static/` vazia pós-06.26.
+
+### Migration notes (aluno)
+- `azd up` agora provisiona **3 hosts**: App Service (frontend) + 2 Container Apps (backend Python + tickets-service .NET).
+- URL final do app: `https://app-helpsphere-{env}.azurewebsites.net` (não mais Container App backend).
+- ChatPanel: `https://app-helpsphere-{env}.azurewebsites.net/?chat=1`.
+- Recursos provisionados: +1 App Service Plan B1 (~R$ 50/mês). Downgrade para F1 idle se quiser economizar.
+
+### Known issues (tech debt aceito)
+- **7 fetch hardcoded em `api.ts`** (/speech, /upload, /delete_uploaded, /list_uploaded, /chat_history×3) que ignoram `BACKEND_URI`. NÃO usadas no fluxo Lab Inter (TicketDetail + ChatPanel). Em prod App Service Linux frontend retornarão 404. Fix em iter futura quando alguma feature opcional for ativada.
+- **`/chat/rag` bypass auth via `DEMO_TENANT_ID`** (Story 06.27 deferred) — lab é avaliado por processo RAG, não segurança.
+
+### See also
+- `docs/qa/gates/lab-inter-passos-8-9-10-pre-gravacao.yml` (gate pré-gravação)
+- Story 06.26 spec: `azure-retail/docs/stories/06.26.lab-inter-frontend-host-separado.md`
+
+---
+
 ## [v0.3.0] — 2026-05-XX ★ Wave 4 ACTIVE pedagogical rewrite (Story 06.13)
 
 ### Added

@@ -7,7 +7,10 @@
  */
 import { getHeaders } from "./api";
 
-const BACKEND_URI = "";
+// Story 06.26: frontend hospedado em App Service separado. BACKEND_URI vem de
+// env injetado no build (Bicep popula VITE_BACKEND_URI com URL do Container App backend).
+// Em dev (vite serve) BACKEND_URI fica "" e Vite proxy redireciona (vite.config.ts).
+const BACKEND_URI = import.meta.env.VITE_BACKEND_URI ?? "";
 
 export interface RagCitation {
     source: string;

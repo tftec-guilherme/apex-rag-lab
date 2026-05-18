@@ -27,7 +27,10 @@ import type {
 // continua apontando pro backend Python que serve `/api/tenants/me` (config) e
 // `/api/tickets/{id}/suggest` (stub 501 para Lab Intermediário sobrescrever com RAG).
 const TICKETS_API_BASE = ticketsApiBase;
-const BACKEND_URI = "";
+// Story 06.26: frontend hospedado em App Service separado. BACKEND_URI vem de
+// env injetado no build (Bicep popula VITE_BACKEND_URI com URL do Container App backend).
+// Em dev (vite serve) BACKEND_URI fica "" e Vite proxy redireciona (vite.config.ts).
+const BACKEND_URI = import.meta.env.VITE_BACKEND_URI ?? "";
 const TICKETS_BASE = `${TICKETS_API_BASE}/api/tickets`;
 
 function buildQuery(filters: TicketsListFilters): string {

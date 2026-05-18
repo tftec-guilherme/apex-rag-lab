@@ -113,6 +113,15 @@
     "backendServiceName": {
       "value": "${AZURE_APP_SERVICE}"
     },
+    "frontendAppServiceName": {
+      "value": "${FRONTEND_APP_SERVICE_NAME=}"
+    },
+    "frontendAppServicePlanName": {
+      "value": "${FRONTEND_APP_SERVICE_PLAN_NAME=}"
+    },
+    "frontendAppServicePlanSku": {
+      "value": "${FRONTEND_APP_SERVICE_PLAN_SKU=B1}"
+    },
     "chatGptModelName": {
       "value": "${AZURE_OPENAI_CHATGPT_MODEL}"
     },

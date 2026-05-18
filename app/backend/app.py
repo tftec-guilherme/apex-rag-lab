@@ -42,8 +42,6 @@ from quart import (
     send_file,
     send_from_directory,
 )
-from quart_cors import cors
-
 from approaches.approach import Approach, DataPoints
 from approaches.chatreadretrieveread import ChatReadRetrieveReadApproach
 from approaches.promptmanager import PromptManager
@@ -853,10 +851,28 @@ def create_app():
     app.logger.setLevel(os.getenv("APP_LOG_LEVEL", app_level))
     logging.getLogger("scripts").setLevel(app_level)
 
-    if allowed_origin := os.getenv("ALLOWED_ORIGIN"):
-        allowed_origins = allowed_origin.split(";")
-        if len(allowed_origins) > 0:
-            app.logger.info("CORS enabled for %s", allowed_origins)
-            cors(app, allow_origin=allowed_origins, allow_methods=["GET", "POST"])
+    # Story 06.26: CORS reflectente totalmente aberto. Devolve o `Origin` do request
+    # como `Access-Control-Allow-Origin`. Sem whitelist (que sempre da galho quando
+    # FRONTEND_URI muda). Compativel com Bearer JWT (allow-credentials=true).
+    # Substitui o middleware upstream baseado em ALLOWED_ORIGIN.
+    #
+    # before_request: responde OPTIONS preflight com 204 (evita 405 em rotas POST-only).
+    # after_request: adiciona headers CORS em TODAS responses (preflight + real).
+    @app.before_request
+    async def handle_cors_preflight():
+        if request.method == "OPTIONS":
+            response = await make_response("", 204)
+            return response
+
+    @app.after_request
+    async def add_cors_headers(response):
+        origin = request.headers.get("Origin")
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Vary"] = "Origin"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE, PATCH"
+        return response
 
     return app

@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
+    "start": "node server.js",
     "preview": "vite preview",
     "format": "prettier --write ."
   },
@@ -23,6 +24,7 @@
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@react-spring/web": "^10.0.3",
     "dompurify": "^3.4.0",
+    "express": "^4.21.2",
     "i18next": "^24.2.0",
     "i18next-browser-languagedetector": "^8.0.2",
     "i18next-http-backend": "^3.0.1",
