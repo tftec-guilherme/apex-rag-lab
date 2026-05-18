@@ -617,6 +617,10 @@ module frontendAppService 'core/host/appservice.bicep' = {
     // server-side NAO deve recompilar o bundle (poderia divergir entre prebuild
     // e build do servidor). server.js Express serve `dist/` estatico + proxia API.
     appCommandLine: 'node server.js'
+    // Story 06.26: healthCheckPath '/' acelera "Starting runtime process" do azd
+    // — Azure platform considera instance ready assim que express responde 200 em /
+    // (que e imediato, sem dependencias). Sem isso azd espera 30-60s generic.
+    healthCheckPath: '/'
     // Story 06.26 fix: scmDoBuildDuringDeployment=true para Oryx rodar `npm install`
     // server-side. Sem isso o zip do azd nao inclui node_modules/ e o node server.js
     // falha com ERR_MODULE_NOT_FOUND 'express'. Vite build ja foi feito no prebuild
