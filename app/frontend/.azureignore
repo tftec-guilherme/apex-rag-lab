@@ -1,0 +1,31 @@
+# Story 06.26 v2: deploy só do necessário (~5MB em vez de 200MB+).
+# Reduz tempo azd deploy de ~8min para ~60s.
+# Build acontece localmente via azure.yaml prepackage hook.
+
+# Source code (não precisa em runtime — só dist/ compilado)
+src/
+*.ts
+*.tsx
+tsconfig.json
+vite.config.ts
+
+# Dev deps (não há deps runtime — server.js usa http nativo)
+node_modules/
+
+# Git/IDE
+.git/
+.vscode/
+.gitignore
+.prettierrc.json
+.prettierignore
+
+# Build artifacts intermediários
+*.tsbuildinfo
+.eslintcache
+
+# Public estática (já copiada para dist/ pelo Vite)
+public/
+
+# Test / config (não necessários em prod)
+playwright.config.ts
+tests/

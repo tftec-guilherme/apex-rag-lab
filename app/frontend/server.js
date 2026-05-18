@@ -1,38 +1,86 @@
-// Story 06.26 — Lab Inter D06: frontend separado em App Service Linux Node 22.
-// Express simples serve Vite build (`dist/`) + SPA fallback para react-router.
-// PORT vem da plataforma App Service (process.env.PORT). Em dev local: `npm start`
-// usa 8080 por default — mas em dev real use `npm run dev` (Vite + proxy).
-//
-// Backend (Container App helpsphere-backend) é alcançado pelo browser via
-// VITE_BACKEND_URI injetado no build (configurado no Bicep `app-helpsphere-{env}`).
-// Este server NÃO faz proxy nem conhece o backend — apenas serve estáticos.
-import express from "express";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+// Story 06.26 v2 — SPA server usando `http` nativo do Node (zero deps runtime).
+// Express foi removido: deploy reduzido de ~8min pra ~60s eliminando node_modules
+// runtime (sem npm install server-side, sem tar.gz, sem extract).
+// Vite build acontece localmente no PC do aluno (azure.yaml prepackage hook).
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
+import { createServer } from "node:http";
+import { dirname, extname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const app = express();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DIST = join(__dirname, "dist");
 const PORT = process.env.PORT || 8080;
-const DIST_DIR = join(__dirname, "dist");
 
-app.use(express.static(DIST_DIR));
+const MIME = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".woff2": "font/woff2",
+    ".woff": "font/woff",
+    ".ttf": "font/ttf",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".ico": "image/x-icon",
+    ".webp": "image/webp",
+    ".map": "application/json; charset=utf-8"
+};
 
-// Story 06.26 fix tela branca: `authConfig.ts` faz fetch(`.auth/me`) no boot
-// (compat upstream azure-search-openai-demo que pressupõe Easy Auth). Como Easy
-// Auth está disabled no backend e ESTE server é App Service Linux Node (não
-// proxia auth), retornamos 404 explícito. Sem isso o SPA fallback devolveria
-// HTML, `r.json()` crashava, top-level await em authConfig rejected, e a página
-// ficava branca.
-app.get("/.auth/*", (req, res) => {
-    res.status(404).json({ error: "easy_auth_not_active", detail: "Easy Auth disabled in Story 06.26 — use MSAL via /auth_setup endpoint on backend." });
-});
+const sendFile = (res, filePath, status, statsSize, contentType) => {
+    res.writeHead(status, {
+        "Content-Type": contentType,
+        "Content-Length": statsSize,
+        "Cache-Control": status === 200 && filePath.includes("/assets/") ? "public, max-age=31536000, immutable" : "no-cache"
+    });
+    createReadStream(filePath).pipe(res);
+};
 
-// SPA fallback — qualquer rota não-arquivo retorna index.html para o react-router resolver client-side.
-app.get("*", (req, res) => {
-    res.sendFile(join(DIST_DIR, "index.html"));
-});
+createServer(async (req, res) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        res.writeHead(405, { "Content-Type": "text/plain" });
+        res.end("Method not allowed");
+        return;
+    }
 
-app.listen(PORT, () => {
-    console.log(`HelpSphere frontend (Story 06.26) serving on port ${PORT}`);
+    // Easy Auth disabled (Story 06.26) — retornar 404 JSON evita SPA fallback
+    // mandar HTML pro authConfig.ts → r.json() crash → tela branca.
+    if (req.url.startsWith("/.auth/")) {
+        const body = JSON.stringify({
+            error: "easy_auth_not_active",
+            detail: "Easy Auth disabled in Story 06.26 — use MSAL via /auth_setup endpoint on backend."
+        });
+        res.writeHead(404, { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) });
+        res.end(body);
+        return;
+    }
+
+    const urlPath = req.url.split("?")[0].split("#")[0];
+    const safePath = urlPath === "/" ? "/index.html" : urlPath;
+    const filePath = join(DIST, safePath);
+
+    try {
+        const stats = await stat(filePath);
+        if (stats.isFile()) {
+            const ext = extname(filePath).toLowerCase();
+            sendFile(res, filePath, 200, stats.size, MIME[ext] || "application/octet-stream");
+            return;
+        }
+    } catch {
+        // not found — SPA fallback
+    }
+
+    try {
+        const indexPath = join(DIST, "index.html");
+        const indexStats = await stat(indexPath);
+        sendFile(res, indexPath, 200, indexStats.size, "text/html; charset=utf-8");
+    } catch {
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end("dist/index.html missing — run `npm run build` first");
+    }
+}).listen(PORT, () => {
+    console.log(`HelpSphere frontend (Story 06.26 v2 — http nativo) serving on port ${PORT}`);
 });

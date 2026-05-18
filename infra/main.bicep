@@ -640,12 +640,11 @@ module frontendAppService 'core/host/appservice.bicep' = {
     // Para appservice usa o nome default do backend (mesmo pattern do `name` no module backend).
     appSettings: {
       WEBSITE_NODE_DEFAULT_VERSION: '~22'
-      // Story 06.26: NODE_OPTIONS heap aumentado pra vite build (4227 modulos).
-      NODE_OPTIONS: '--max-old-space-size=1536'
-      // REVERTIDO: BUILD_FLAGS=compress_node_modules=none piorou deploy time
-      // (rsync 200MB many-small-files via Azure Files = 5-10min vs 50s do tar.gz).
-      // Oryx default descomprime tar.gz via SYMLINK em /node_modules root automatic
-      // — express fica acessivel pelo Node sem precisar extract no wwwroot.
+      // Story 06.26 v2: SKIP Oryx build server-side. Vite build acontece LOCAL
+      // via azure.yaml prepackage hook (npm install + npm run build no PC do aluno).
+      // server.js usa http nativo do Node — ZERO deps runtime. Deploy 8min → ~60s.
+      SCM_DO_BUILD_DURING_DEPLOYMENT: 'false'
+      ENABLE_ORYX_BUILD: 'false'
       VITE_BACKEND_URI: (deploymentTarget == 'containerapps')
         ? 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesContainerApps}backend-${resourceToken}'}.${containerApps!.outputs.defaultDomain}'
         : 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesAppService}backend-${resourceToken}'}.azurewebsites.net'
