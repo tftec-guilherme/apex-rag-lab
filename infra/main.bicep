@@ -616,11 +616,7 @@ module frontendAppService 'core/host/appservice.bicep' = {
     // Vite build acontece via prebuild hook do azd (npm run build local); o Oryx
     // server-side NAO deve recompilar o bundle (poderia divergir entre prebuild
     // e build do servidor). server.js Express serve `dist/` estatico + proxia API.
-    // Story 06.26 fix: Oryx comprime `node_modules.tar.gz` mas NAO descomprime no
-    // startup quando appCommandLine e custom. Sem extracao node_modules/ fica vazio
-    // e `node server.js` falha com ERR_MODULE_NOT_FOUND 'express'.
-    // Workaround: extrair tar.gz se existir (idempotente) antes do node start.
-    appCommandLine: 'cd /home/site/wwwroot && (test -f node_modules.tar.gz && tar -xzf node_modules.tar.gz -C /home/site/wwwroot/ 2>/dev/null || true) && node server.js'
+    appCommandLine: 'node server.js'
     // Story 06.26 fix: scmDoBuildDuringDeployment=true para Oryx rodar `npm install`
     // server-side. Sem isso o zip do azd nao inclui node_modules/ e o node server.js
     // falha com ERR_MODULE_NOT_FOUND 'express'. Vite build ja foi feito no prebuild
@@ -642,9 +638,12 @@ module frontendAppService 'core/host/appservice.bicep' = {
       WEBSITE_NODE_DEFAULT_VERSION: '~22'
       // Story 06.26 fix: aumenta heap do Node pra `vite build` server-side (~4200 modulos
       // estourava o default ~1.4GB em B1 1.75GB RAM). 1536MB deixa ~200MB pro SO.
-      // Se ainda OOM em frontend maior, considerar upgrade pra P1v2 (3.5GB) ou
-      // skip Oryx build via ENABLE_ORYX_BUILD=false + incluir dist/ no zip.
       NODE_OPTIONS: '--max-old-space-size=1536'
+      // Story 06.26 fix: forca Oryx a NAO comprimir node_modules.tar.gz no build.
+      // Default comprime em tar.gz mas NAO descomprime no startup quando appCommandLine
+      // e custom — express fica missing → ERR_MODULE_NOT_FOUND. Com compress=none,
+      // node_modules/ fica extraido direto em /home/site/wwwroot, server.js acha tudo.
+      BUILD_FLAGS: '-p compress_node_modules=none'
       VITE_BACKEND_URI: (deploymentTarget == 'containerapps')
         ? 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesContainerApps}backend-${resourceToken}'}.${containerApps!.outputs.defaultDomain}'
         : 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesAppService}backend-${resourceToken}'}.azurewebsites.net'
