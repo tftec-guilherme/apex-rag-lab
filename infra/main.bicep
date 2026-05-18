@@ -633,6 +633,11 @@ module frontendAppService 'core/host/appservice.bicep' = {
     // Para appservice usa o nome default do backend (mesmo pattern do `name` no module backend).
     appSettings: {
       WEBSITE_NODE_DEFAULT_VERSION: '~22'
+      // Story 06.26 fix: aumenta heap do Node pra `vite build` server-side (~4200 modulos
+      // estourava o default ~1.4GB em B1 1.75GB RAM). 1536MB deixa ~200MB pro SO.
+      // Se ainda OOM em frontend maior, considerar upgrade pra P1v2 (3.5GB) ou
+      // skip Oryx build via ENABLE_ORYX_BUILD=false + incluir dist/ no zip.
+      NODE_OPTIONS: '--max-old-space-size=1536'
       VITE_BACKEND_URI: (deploymentTarget == 'containerapps')
         ? 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesContainerApps}backend-${resourceToken}'}.${containerApps!.outputs.defaultDomain}'
         : 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesAppService}backend-${resourceToken}'}.azurewebsites.net'
