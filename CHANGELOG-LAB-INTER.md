@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - **App Service `app-helpsphere-{env}` Linux Node 22 (B1)** — frontend Vite agora roda em host próprio (Story 06.26). Bicep cria `Microsoft.Web/sites` + `Microsoft.Web/serverfarms`. Output `FRONTEND_URI` populado no `.env` do azd.
 - **`app/frontend/server.js`** — Express simples (estático + SPA fallback) para rodar Vite build em App Service.
-- **CORS no backend via env `ALLOWED_ORIGIN`** — usa o middleware `quart_cors` upstream já existente (app.py L873-877). Bicep popula com `corsOrigins` (union de `allowedOrigin` + `FRONTEND_URI`), separador `;`.
+- **CORS reflectente totalmente aberto no backend** — `@app.before_request` (preflight OPTIONS → 204) + `@app.after_request` (devolve `Origin` do request como `Access-Control-Allow-Origin`). SEM whitelist (que sempre dava galho quando `FRONTEND_URI` mudava). Compatível com Bearer JWT (`Allow-Credentials: true`). Substitui middleware upstream baseado em `ALLOWED_ORIGIN`. Import `quart_cors` removido (não mais usado).
 - **Easy Auth do backend → AllowAnonymous** — param `enableUnauthenticatedAccess` default agora `true`. Auth real via LoginGate frontend (MSAL) + `@authenticated` decorator Python em endpoints sensíveis (tickets, /chat, /chat/stream). /chat/rag tem bypass DEMO via `DEMO_TENANT_ID` (Story 06.27 deferred — tech debt aceito).
 
 ### Changed

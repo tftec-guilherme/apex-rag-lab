@@ -845,9 +845,8 @@ module acaBackend 'core/host/container-app-upsert.bicep' = if (deploymentTarget 
       // body retorna `successor_uri: null` — viola RFC 5988/8288 e atrapalha auto-discovery
       // do tickets-service .NET pelos clientes legacy.
       TICKETS_BACKEND_URI: (deploymentTarget == 'containerapps') ? acaTickets!.outputs.uri : ''
-      // Story 06.26: CORS via env ALLOWED_ORIGIN (separator ';') que app.py L873 ja le.
-      // corsOrigins inclui FRONTEND_URI do App Service app-helpsphere-{env}.
-      ALLOWED_ORIGIN: join(corsOrigins, ';')
+      // Story 06.26: CORS reflectente no backend (app.py @app.after_request) — devolve
+      // o Origin do request. SEM whitelist no Bicep (que dava galho a cada FRONTEND_URI novo).
     })
     secrets: useAuthentication ? {
       azureclientappsecret: clientAppSecret
