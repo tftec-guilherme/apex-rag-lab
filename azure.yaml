@@ -33,14 +33,25 @@ services:
     host: appservice
     hooks:
       prepackage:
+        # Story 06.26 v3: exportar VITE_BACKEND_URI do azd env ANTES do vite build.
+        # Vite substitui import.meta.env.VITE_BACKEND_URI em BUILD TIME. Sem export,
+        # vira "" e fetch /auth_setup vai pro frontend (HTML) → JSON parse crash →
+        # tela branca. azd env get-value BACKEND_URI puxa do output Bicep.
         windows:
           shell: pwsh
-          run: npm install; npm run build
+          run: |
+            $env:VITE_BACKEND_URI = (azd env get-value BACKEND_URI)
+            Write-Host "Building frontend with VITE_BACKEND_URI=$env:VITE_BACKEND_URI"
+            npm install
+            npm run build
           interactive: false
           continueOnError: false
         posix:
           shell: sh
-          run: npm install && npm run build
+          run: |
+            export VITE_BACKEND_URI=$(azd env get-value BACKEND_URI)
+            echo "Building frontend with VITE_BACKEND_URI=$VITE_BACKEND_URI"
+            npm install && npm run build
           interactive: false
           continueOnError: false
   # HelpSphere — Story 06.26: Vite build movido pro service `frontend` (App Service Linux Node 22).
