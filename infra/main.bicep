@@ -616,7 +616,11 @@ module frontendAppService 'core/host/appservice.bicep' = {
     // Vite build acontece via prebuild hook do azd (npm run build local); o Oryx
     // server-side NAO deve recompilar o bundle (poderia divergir entre prebuild
     // e build do servidor). server.js Express serve `dist/` estatico + proxia API.
-    appCommandLine: 'node server.js'
+    // Story 06.26 fix: Oryx comprime `node_modules.tar.gz` mas NAO descomprime no
+    // startup quando appCommandLine e custom. Sem extracao node_modules/ fica vazio
+    // e `node server.js` falha com ERR_MODULE_NOT_FOUND 'express'.
+    // Workaround: extrair tar.gz se existir (idempotente) antes do node start.
+    appCommandLine: 'cd /home/site/wwwroot && (test -f node_modules.tar.gz && tar -xzf node_modules.tar.gz -C /home/site/wwwroot/ 2>/dev/null || true) && node server.js'
     // Story 06.26 fix: scmDoBuildDuringDeployment=true para Oryx rodar `npm install`
     // server-side. Sem isso o zip do azd nao inclui node_modules/ e o node server.js
     // falha com ERR_MODULE_NOT_FOUND 'express'. Vite build ja foi feito no prebuild
