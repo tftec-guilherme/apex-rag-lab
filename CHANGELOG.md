@@ -10,6 +10,73 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added — CRUD Evolution (Lab Inter pré-Lab Avançado, 2026-05-19)
+
+**Evolução pedagógica incremental:** `apex-helpsphere` (base) → `apex-rag-lab` (Lab Inter
+= base + RAG) → `apex-helpsphere-prod-lab` (Lab Av = Lab Inter + APIM/Policy/CS). Para
+manter a coerência da cadeia, as 5 melhorias CRUD que entram no Lab Avançado também
+foram aplicadas retroativamente aqui — aluno do Lab Inter já recebe **UX completa**
+(CRUD pleno + RAG), não read-mostly.
+
+#### Frontend (`app/frontend/src/`)
+
+1. **UI "Novo Ticket"** (`pages/tickets/NewTicket.tsx` NOVO + rota `tickets/new`):
+   form completo com validação client-side espelhando `RequestValidators.cs` (subject
+   5-200, description ≤16k, category/priority enum) + integração `createTicketApi` →
+   redireciona para detalhe do ticket criado. Botão "Novo ticket" da fila habilitado.
+
+2. **Fix transition status endpoint** (`pages/tickets/TicketDetail.tsx`): anteriormente
+   `patchStatus` chamava `PUT /api/tickets/{id}` com `{status}` que era **silenciosamente
+   ignorado** pelo backend (`UpdateAsync` não inclui campo `status` no SET). Agora usa
+   `transitionTicketStatusApi` → `POST /transitions` (state machine validada com
+   auto-comment atomicamente).
+
+3. **Add Comment habilitado** (`pages/tickets/TicketDetail.tsx`): MessageBar "Adicionar
+   comentário — Lab Intermediário" substituída por form real com `addCommentApi` (POST
+   /api/tickets/{id}/comments).
+
+4. **Priority filter server-side** (`pages/tickets/Tickets.tsx` + `api/tickets.ts`):
+   filtro de prioridade migrou de client-side (em `useMemo`) para server-side (query
+   param `priority` + `q`). Garante consistência de paginação.
+
+5. **UPDATE form completo** (`pages/tickets/TicketDetail.tsx`): edição inline de
+   `subject/description/priority` via botão "Editar" no header do detalhe. `category`
+   permanece IMMUTABLE após criação (DECISION-LOG.md — preserva taxonomia).
+
+#### Backend (`app/tickets-service/src/`)
+
+- **POST /api/tickets/{id}/comments** (NOVO endpoint):
+  - `Endpoints/Models/CreateCommentRequest.cs` — DTO body.
+  - `RequestValidators.ValidateCommentContent` — content 1..4000 chars.
+  - `ICommentsRepository.AddUserCommentAsync` — INSERT user-driven com defesa
+    cross-tenant (SELECT COUNT(1) WHERE tenant_id antes de INSERT).
+  - `CommentsRepository.AddUserCommentAsync` — implementa com SQL Server (`OUTPUT
+    INSERTED`) + fallback SQLite (`last_insert_rowid()`) para testes.
+  - `TicketsEndpoints.AddCommentAsync` — handler com 404 cross-tenant.
+
+- **GET /api/tickets?priority=** (filter expandido):
+  - `TicketFilter.Priority` adicionado ao record.
+  - `RequestValidators.ValidateAndBuildFilter` parseia + valida enum.
+  - `TicketsEndpoints.ListTicketsAsync` aceita `[FromQuery] priority`.
+  - `TicketsRepository.BuildWhereClause` adiciona `priority = @priority`.
+
+### Pedagogical impact
+
+- Lab Inter (Bloco 4) entrega **CRUD pleno + RAG** como pacote sólido, não read-mostly.
+- Coerência arquitetural com `apex-helpsphere-prod-lab` v0.4.0 (Lab Av) — mesmos arquivos
+  evoluem em sequência, sem regressão pedagógica.
+- Defesa "production-grade" do template fortalece-se: state machine + transações
+  atômicas + defesa cross-tenant ficam visíveis no Lab Inter, antes do Lab Av amplificar
+  com APIM/Policy/Content Safety.
+
+### Cross-references
+
+- Sister release: `apex-helpsphere-prod-lab` v0.4.0 (Lab Av — mesma sessão 2026-05-19).
+- Origem dos arquivos: copy de `apex-helpsphere-prod-lab/app/` após implementação
+  inicial — 11 arquivos modificados + 2 novos (NewTicket.tsx + CreateCommentRequest.cs).
+
+---
+
 ### Added — Story 06.10 Lab Intermediário Parte 8 (RAG ChatPanel + proxy)
 
 - **Bicep params** — `ragEnabled` (bool, default `false`), `ragFunctionUrl` (string), `ragFunctionKey` (secure string). Propagados como env vars `RAG_ENABLED` / `RAG_FUNCTION_URL` / `RAG_FUNCTION_KEY` no Container App backend (e nos AppSettings do App Service quando `deploymentTarget=appservice`).

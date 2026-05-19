@@ -405,6 +405,13 @@ ORDER BY [Date];
             parameters.Add("category", filter.Category.Value);
         }
 
+        // Lab Avançado v0.4.0: priority filter server-side (anteriormente client-side).
+        if (filter.Priority is not null)
+        {
+            clauses.Add("priority = @priority");
+            parameters.Add("priority", filter.Priority.Value);
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.Query))
         {
             // Escape % and _ wildcards (treat literal); ESCAPE '\' is SQL Server convention

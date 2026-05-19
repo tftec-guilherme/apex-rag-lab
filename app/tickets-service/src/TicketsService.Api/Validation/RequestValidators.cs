@@ -165,7 +165,7 @@ public static class RequestValidators
     }
 
     public static TicketFilter ValidateAndBuildFilter(
-        string? status, string? category, string? q, int? page, int? pageSize)
+        string? status, string? category, string? priority, string? q, int? page, int? pageSize)
     {
         var errors = new List<ValidationError>();
 
@@ -191,6 +191,18 @@ public static class RequestValidators
             }
         }
 
+        // Lab Avançado v0.4.0: priority filter server-side.
+        TicketPriority? priorityEnum = null;
+        if (!string.IsNullOrWhiteSpace(priority))
+        {
+            if (!TicketPriority.TryParse(priority, out priorityEnum))
+            {
+                errors.Add(new ValidationError(
+                    "priority",
+                    $"priority must be one of: {string.Join(", ", TicketPriority.All.Select(p => p.Value))}"));
+            }
+        }
+
         var pageVal = page ?? 1;
         if (pageVal < 1)
         {
@@ -207,7 +219,33 @@ public static class RequestValidators
 
         ThrowIfErrors(errors);
 
-        return new TicketFilter(statusEnum, categoryEnum, q, pageVal, pageSizeVal);
+        return new TicketFilter(statusEnum, categoryEnum, priorityEnum, q, pageVal, pageSizeVal);
+    }
+
+    /// <summary>
+    /// Lab Avançado v0.4.0: valida CreateCommentRequest (POST /api/tickets/{id}/comments).
+    /// Content: 1..4000 chars.
+    /// </summary>
+    public static string ValidateCommentContent(CreateCommentRequest req)
+    {
+        var errors = new List<ValidationError>();
+        const int CommentMinLength = 1;
+        const int CommentMaxLength = 4000;
+
+        if (string.IsNullOrWhiteSpace(req.Content))
+        {
+            errors.Add(new ValidationError("content", "content is required"));
+        }
+        else if (req.Content.Length is < CommentMinLength or > CommentMaxLength)
+        {
+            errors.Add(new ValidationError(
+                "content",
+                $"content must be between {CommentMinLength} and {CommentMaxLength} characters"));
+        }
+
+        ThrowIfErrors(errors);
+
+        return req.Content.Trim();
     }
 
     private static IReadOnlyList<string> ValidateAttachments(

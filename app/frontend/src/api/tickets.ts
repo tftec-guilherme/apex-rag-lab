@@ -13,6 +13,9 @@ import type {
     TicketComment,
     TicketDetail,
     TicketPatchBody,
+    TicketTransitionBody,
+    TicketCreateBody,
+    CommentCreateBody,
     Tenant,
     TicketsListFilters,
     TicketsListResponse,
@@ -37,6 +40,9 @@ function buildQuery(filters: TicketsListFilters): string {
     const params = new URLSearchParams();
     if (filters.status) params.set("status", filters.status);
     if (filters.category) params.set("category", filters.category);
+    // Lab Avançado v0.4.0: priority + q passaram para server-side (era client-side antes).
+    if (filters.priority) params.set("priority", filters.priority);
+    if (filters.q) params.set("q", filters.q);
     if (typeof filters.limit === "number") params.set("limit", String(filters.limit));
     if (typeof filters.offset === "number") params.set("offset", String(filters.offset));
     const qs = params.toString();
@@ -80,22 +86,33 @@ export async function getTicketApi(ticketId: number, idToken: string | undefined
 }
 
 /**
- * Story 06.5c.6 — `POST /api/tickets/{id}/comments` ainda NÃO está implementado no
- * tickets-service .NET (futuro: Story 06.5c.10 ou Lab Intermediário). UI exibe o
- * input desabilitado com tooltip explicativo. Esta função existe para preservar o
- * contract da API mas retorna erro explícito até o endpoint ser implementado.
+ * Lab Avançado v0.4.0: endpoint POST /api/tickets/{id}/comments agora implementado
+ * no tickets-service .NET (anteriormente stub que jogava erro). Aluno do Lab Av
+ * exercita comentários reais.
  */
-export async function addCommentApi(_ticketId: number, _content: string, _idToken: string | undefined): Promise<TicketComment> {
-    throw new Error(
-        "Adicionar comentário ainda não está disponível: o endpoint POST /api/tickets/{id}/comments " +
-            "será implementado no Lab Intermediário (junto com sugestão de resposta via RAG). " +
-            "Por enquanto, a thread exibe os comentários do seed."
-    );
+export async function addCommentApi(ticketId: number, content: string, idToken: string | undefined): Promise<TicketComment> {
+    const headers = await getHeaders(idToken);
+    const body: CommentCreateBody = { content };
+    const response = await fetch(`${TICKETS_BASE}/${ticketId}/comments`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+        throw new Error(await readErrorMessage(response, `Adding comment failed: ${response.statusText}`));
+    }
+    return (await response.json()) as TicketComment;
 }
 
+/**
+ * PUT /api/tickets/{id} — atualização parcial de subject/description/category/priority/attachments.
+ *
+ * Lab Avançado v0.4.0: **NÃO usar para mudar status** — backend `UpdateAsync` ignora
+ * o campo `status` silenciosamente (state machine fica fora). Para transições de status,
+ * use `transitionTicketStatusApi` (POST /transitions com validação Open→InProgress→Resolved
+ * + Escalated cruzado).
+ */
 export async function patchTicketApi(ticketId: number, body: TicketPatchBody, idToken: string | undefined): Promise<Ticket> {
-    // .NET tickets-service expõe `PUT /api/tickets/{id}` (semântica de full update).
-    // Mantemos o nome `patchTicketApi` por compat com call sites — método HTTP mudou para PUT.
     const headers = await getHeaders(idToken);
     const response = await fetch(`${TICKETS_BASE}/${ticketId}`, {
         method: "PUT",
@@ -104,6 +121,47 @@ export async function patchTicketApi(ticketId: number, body: TicketPatchBody, id
     });
     if (!response.ok) {
         throw new Error(await readErrorMessage(response, `Updating ticket failed: ${response.statusText}`));
+    }
+    return (await response.json()) as Ticket;
+}
+
+/**
+ * Lab Avançado v0.4.0: transição de status via state machine validada.
+ *
+ * Backend .NET (`TransitionStatusAsync`) faz UPDATE + INSERT auto-comment atomicamente,
+ * recusa transições inválidas com HTTP 422. Bug do rag-lab era chamar PUT com `{status}`
+ * que era silenciosamente ignorado — agora usa o endpoint canônico.
+ */
+export async function transitionTicketStatusApi(
+    ticketId: number,
+    body: TicketTransitionBody,
+    idToken: string | undefined
+): Promise<Ticket> {
+    const headers = await getHeaders(idToken);
+    const response = await fetch(`${TICKETS_BASE}/${ticketId}/transitions`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+        throw new Error(await readErrorMessage(response, `Transition failed: ${response.statusText}`));
+    }
+    return (await response.json()) as Ticket;
+}
+
+/**
+ * Lab Avançado v0.4.0: criação de ticket via POST /api/tickets.
+ * Backend gera ticket_id (IDENTITY), preenche tenant_id (JWT), seta status="Open" + timestamps.
+ */
+export async function createTicketApi(body: TicketCreateBody, idToken: string | undefined): Promise<Ticket> {
+    const headers = await getHeaders(idToken);
+    const response = await fetch(`${TICKETS_BASE}`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+        throw new Error(await readErrorMessage(response, `Creating ticket failed: ${response.statusText}`));
     }
     return (await response.json()) as Ticket;
 }

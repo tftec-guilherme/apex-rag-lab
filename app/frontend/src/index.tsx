@@ -34,6 +34,12 @@ const router = createHashRouter([
                 lazy: () => import("./pages/tickets/Tickets")
             },
             {
+                // Lab Avançado v0.4.0: criação de ticket via form dedicado.
+                // Rota antes de ":ticketId" para evitar match de "new" como ID numérico.
+                path: "tickets/new",
+                lazy: () => import("./pages/tickets/NewTicket")
+            },
+            {
                 path: "tickets/:ticketId",
                 lazy: () => import("./pages/tickets/TicketDetail")
             },

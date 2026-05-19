@@ -61,13 +61,57 @@ export interface Tenant {
 export interface TicketsListFilters {
     status?: TicketStatus;
     category?: TicketCategory;
+    /** Lab Avançado v0.4.0: filtro de prioridade agora server-side. */
+    priority?: TicketPriority;
+    /** Lab Avançado v0.4.0: busca textual (LIKE em subject) já enviada ao backend. */
+    q?: string;
     limit?: number;
     offset?: number;
 }
 
+/**
+ * Body do PUT /api/tickets/{id} — campos opcionais que o backend .NET aceita.
+ * Lab Avançado v0.4.0: estendido para subject/description/priority/attachments (UPDATE
+ * form completo). Para transições de status, usar `transitionTicketStatusApi`. Category
+ * é IMMUTABLE após criação (preserva taxonomia — DECISION-LOG.md).
+ */
 export interface TicketPatchBody {
-    status?: TicketStatus;
+    subject?: string;
+    description?: string;
     priority?: TicketPriority;
+    attachment_blob_paths?: string | null;
+}
+
+/**
+ * Lab Avançado v0.4.0: body do POST /api/tickets/{id}/transitions
+ * (state machine validada no backend — Open ↔ InProgress ↔ Resolved + Escalated).
+ */
+export interface TicketTransitionBody {
+    next_status: TicketStatus;
+    /** Comentário opcional (vira auto-comment na thread). */
+    note?: string;
+}
+
+/**
+ * Lab Avançado v0.4.0: body do POST /api/tickets (criação de ticket).
+ * Backend gera ticket_id (IDENTITY), tenant_id (do JWT), status="Open" e timestamps.
+ */
+export interface TicketCreateBody {
+    subject: string;
+    description: string;
+    category: TicketCategory;
+    priority: TicketPriority;
+    language?: string;
+    confidence_score?: number | null;
+    attachment_blob_paths?: string | null;
+}
+
+/**
+ * Lab Avançado v0.4.0: body do POST /api/tickets/{id}/comments
+ * (anteriormente apenas stub no rag-lab — agora endpoint real implementado).
+ */
+export interface CommentCreateBody {
+    content: string;
 }
 
 export interface SuggestStubResponse {

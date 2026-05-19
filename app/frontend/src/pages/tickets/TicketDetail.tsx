@@ -17,13 +17,25 @@ import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { useMsal } from "@azure/msal-react";
-import { Button, MessageBar, MessageBarBody, MessageBarTitle, Skeleton, SkeletonItem, Spinner } from "@fluentui/react-components";
-import { ArrowClockwise24Regular, ArrowLeft24Regular, Sparkle24Regular } from "@fluentui/react-icons";
+import {
+    Button,
+    Field,
+    Input,
+    Select,
+    Textarea,
+    MessageBar,
+    MessageBarBody,
+    MessageBarTitle,
+    Skeleton,
+    SkeletonItem,
+    Spinner
+} from "@fluentui/react-components";
+import { ArrowClockwise24Regular, ArrowLeft24Regular, Sparkle24Regular, Edit24Regular, Save24Regular, Dismiss24Regular } from "@fluentui/react-icons";
 
 import styles from "./TicketDetail.module.css";
-import { getTicketApi, patchTicketApi, suggestTicketApi } from "../../api";
+import { addCommentApi, getTicketApi, patchTicketApi, suggestTicketApi, transitionTicketStatusApi } from "../../api";
 import type { TicketDetail as TicketDetailType } from "../../api";
-import { TICKET_STATUSES, type TicketStatus } from "../../api/ticketsModels";
+import { TICKET_PRIORITIES, TICKET_STATUSES, type TicketPriority, type TicketStatus } from "../../api/ticketsModels";
 import { StatusPill } from "../../components/StatusPill/StatusPill";
 import { SlaCountdown } from "../../components/SlaCountdown/SlaCountdown";
 import { CommentTimeline } from "../../components/Timeline/CommentTimeline";
@@ -53,6 +65,20 @@ export function Component(): JSX.Element {
 
     const [suggesting, setSuggesting] = useState(false);
     const [suggestResult, setSuggestResult] = useState<string | null>(null);
+
+    // Lab Avançado v0.4.0: comentário real (endpoint .NET implementado).
+    const [commentDraft, setCommentDraft] = useState("");
+    const [addingComment, setAddingComment] = useState(false);
+    const [commentError, setCommentError] = useState<string | null>(null);
+
+    // Lab Avançado v0.4.0: edição inline de subject/description/priority.
+    // Category fica IMMUTABLE após criação (decisão DECISION-LOG.md — preserva taxonomia).
+    const [editMode, setEditMode] = useState(false);
+    const [editSubject, setEditSubject] = useState("");
+    const [editDescription, setEditDescription] = useState("");
+    const [editPriority, setEditPriority] = useState<TicketPriority>("Medium");
+    const [savingEdit, setSavingEdit] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
 
     const getIdToken = useCallback(async (): Promise<string | undefined> => {
         if (!useLogin || !instance) return undefined;
@@ -85,18 +111,96 @@ export function Component(): JSX.Element {
         };
     }, [ticketIdNum, ticketIdValid, ticketId, reloadKey, getIdToken]);
 
+    /**
+     * Lab Avançado v0.4.0: mudança de status agora usa o endpoint canônico
+     * POST /api/tickets/{id}/transitions (state machine no backend valida
+     * Open ↔ InProgress ↔ Resolved + Escalated cruzado e cria auto-comment
+     * atomicamente). Bug do rag-lab era chamar PUT /api/tickets/{id} com
+     * `{status}` que era silenciosamente ignorado pelo `UpdateAsync` .NET.
+     */
     const patchStatus = async (next: TicketStatus) => {
         if (!ticket || next === ticket.status) return;
         setPatchingStatus(next);
         setError(null);
         try {
             const idToken = await getIdToken();
-            const updated = await patchTicketApi(ticket.ticket_id, { status: next }, idToken);
+            const updated = await transitionTicketStatusApi(ticket.ticket_id, { next_status: next }, idToken);
+            // Reload completo para puxar o auto-comment criado pelo backend na transição.
             setTicket(prev => (prev ? { ...updated, comments: prev.comments } : prev));
+            setReloadKey(k => k + 1);
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         } finally {
             setPatchingStatus(null);
+        }
+    };
+
+    /**
+     * Lab Avançado v0.4.0: adicionar comentário real (endpoint .NET implementado).
+     * Reload completo após sucesso para puxar o novo comment com timestamps server-side.
+     */
+    const addComment = async () => {
+        if (!ticket || !commentDraft.trim()) return;
+        setAddingComment(true);
+        setCommentError(null);
+        try {
+            const idToken = await getIdToken();
+            await addCommentApi(ticket.ticket_id, commentDraft.trim(), idToken);
+            setCommentDraft("");
+            setReloadKey(k => k + 1);
+        } catch (e) {
+            setCommentError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setAddingComment(false);
+        }
+    };
+
+    /**
+     * Lab Avançado v0.4.0: edição inline de subject/description/category/priority.
+     * Chama PUT /api/tickets/{id} (UpdateAsync — backend aceita esses campos).
+     * NÃO inclui status — use o painel de transições (botões de status) que vai pelo
+     * endpoint canônico /transitions.
+     */
+    const startEdit = () => {
+        if (!ticket) return;
+        setEditSubject(ticket.subject);
+        setEditDescription(ticket.description);
+        setEditPriority(ticket.priority);
+        setEditError(null);
+        setEditMode(true);
+    };
+
+    const cancelEdit = () => {
+        setEditMode(false);
+        setEditError(null);
+    };
+
+    const saveEdit = async () => {
+        if (!ticket) return;
+        const trimmedSubject = editSubject.trim();
+        if (trimmedSubject.length < 5 || trimmedSubject.length > 200) {
+            setEditError("Assunto deve ter entre 5 e 200 caracteres.");
+            return;
+        }
+        setSavingEdit(true);
+        setEditError(null);
+        try {
+            const idToken = await getIdToken();
+            const updated = await patchTicketApi(
+                ticket.ticket_id,
+                {
+                    subject: trimmedSubject,
+                    description: editDescription,
+                    priority: editPriority
+                },
+                idToken
+            );
+            setTicket(prev => (prev ? { ...updated, comments: prev.comments } : prev));
+            setEditMode(false);
+        } catch (e) {
+            setEditError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setSavingEdit(false);
         }
     };
 
@@ -187,8 +291,55 @@ export function Component(): JSX.Element {
                             </div>
                         </header>
 
-                        <h2 className={styles.subject}>{ticket.subject}</h2>
-                        <p className={styles.description}>{ticket.description}</p>
+                        {editMode ? (
+                            // Lab Avançado v0.4.0: edição inline (subject/description/category/priority).
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+                                {editError && (
+                                    <MessageBar intent="error">
+                                        <MessageBarBody>{editError}</MessageBarBody>
+                                    </MessageBar>
+                                )}
+                                <Field label="Assunto" required>
+                                    <Input value={editSubject} onChange={(_, d) => setEditSubject(d.value)} maxLength={200} />
+                                </Field>
+                                <Field label="Descrição">
+                                    <Textarea value={editDescription} onChange={(_, d) => setEditDescription(d.value)} rows={5} />
+                                </Field>
+                                <Field label="Prioridade" hint="Categoria do ticket é imutável após criação (DECISION-LOG.md).">
+                                    <Select value={editPriority} onChange={(_, d) => setEditPriority(d.value as TicketPriority)}>
+                                        {TICKET_PRIORITIES.map(p => (
+                                            <option key={p} value={p}>
+                                                {p}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </Field>
+                                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                                    <Button appearance="secondary" icon={<Dismiss24Regular />} onClick={cancelEdit} disabled={savingEdit}>
+                                        Cancelar
+                                    </Button>
+                                    <Button appearance="primary" icon={<Save24Regular />} onClick={() => void saveEdit()} disabled={savingEdit}>
+                                        {savingEdit ? <Spinner size="tiny" /> : "Salvar"}
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                                    <h2 className={styles.subject}>{ticket.subject}</h2>
+                                    <Button
+                                        appearance="subtle"
+                                        icon={<Edit24Regular />}
+                                        onClick={startEdit}
+                                        size="small"
+                                        title="Editar ticket"
+                                    >
+                                        Editar
+                                    </Button>
+                                </div>
+                                <p className={styles.description}>{ticket.description}</p>
+                            </>
+                        )}
 
                         <section className={styles.statusActions} aria-label={t("helpsphere.tickets.detail.patchStatus")}>
                             <h3 className={styles.sectionTitle}>{t("helpsphere.tickets.detail.patchStatus")}</h3>
@@ -216,18 +367,44 @@ export function Component(): JSX.Element {
                         <section className={styles.commentsSection}>
                             <h3 className={styles.sectionTitle}>{t("helpsphere.tickets.detail.comments", { count: ticket.comments.length })}</h3>
                             <CommentTimeline comments={ticket.comments} locale={localeTag} />
+
                             {/*
-                              Story 06.5c.6 — Adicionar comentário desabilitado temporariamente.
-                              POST /api/tickets/{id}/comments será implementado no Lab Intermediário
-                              (junto com sugestão de resposta via RAG). Ver DECISION-LOG.md #16.
+                              Lab Avançado v0.4.0: POST /api/tickets/{id}/comments agora implementado
+                              no tickets-service .NET (anteriormente stub). Aluno do Lab Av exercita
+                              comentários reais — sugestão RAG continua sendo do Lab Intermediário
+                              (botão "Sugerir resposta" na sidebar continua como stub 501).
                             */}
-                            <MessageBar intent="info" className={styles.commentNotice}>
-                                <MessageBarBody>
-                                    <MessageBarTitle>Adicionar comentário — Lab Intermediário</MessageBarTitle>
-                                    Esta funcionalidade será habilitada quando você acoplar o pipeline RAG no Lab Intermediário (junto com sugestão de resposta
-                                    automática via IA). A thread acima exibe os comentários do seed.
-                                </MessageBarBody>
-                            </MessageBar>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+                                {commentError && (
+                                    <MessageBar intent="error">
+                                        <MessageBarBody>{commentError}</MessageBarBody>
+                                    </MessageBar>
+                                )}
+                                <Field
+                                    label={t("helpsphere.tickets.detail.addCommentLabel", { defaultValue: "Adicionar comentário" })}
+                                    hint={`${commentDraft.length} / 4000`}
+                                >
+                                    <Textarea
+                                        value={commentDraft}
+                                        onChange={(_, d) => setCommentDraft(d.value)}
+                                        maxLength={4000}
+                                        rows={3}
+                                        placeholder={t("helpsphere.tickets.detail.addCommentPlaceholder", {
+                                            defaultValue: "Atualize o cliente, registre passos investigados ou peça mais detalhes…"
+                                        })}
+                                        disabled={addingComment}
+                                    />
+                                </Field>
+                                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                                    <Button
+                                        appearance="primary"
+                                        onClick={() => void addComment()}
+                                        disabled={addingComment || commentDraft.trim().length === 0}
+                                    >
+                                        {addingComment ? <Spinner size="tiny" /> : "Adicionar comentário"}
+                                    </Button>
+                                </div>
+                            </div>
                         </section>
                     </article>
 

@@ -43,6 +43,11 @@ public static class TicketsEndpoints
         group.MapPost("/{id:int}/transitions", TransitionTicketAsync)
              .WithName("TransitionTicket");
 
+        // Lab Avançado v0.4.0: POST /api/tickets/{id}/comments — user-driven comment
+        // (anteriormente apenas stub no frontend rag-lab que jogava Error explícito).
+        group.MapPost("/{id:int}/comments", AddCommentAsync)
+             .WithName("AddComment");
+
         return app;
     }
 
@@ -53,6 +58,8 @@ public static class TicketsEndpoints
     private static async Task<IResult> ListTicketsAsync(
         [FromQuery] string? status,
         [FromQuery] string? category,
+        // Lab Avançado v0.4.0: priority filter server-side
+        [FromQuery] string? priority,
         [FromQuery] string? q,
         [FromQuery] int? page,
         [FromQuery(Name = "page_size")] int? pageSize,
@@ -60,7 +67,7 @@ public static class TicketsEndpoints
         ITenantContext tenantCtx,
         CancellationToken ct)
     {
-        var filter = RequestValidators.ValidateAndBuildFilter(status, category, q, page, pageSize);
+        var filter = RequestValidators.ValidateAndBuildFilter(status, category, priority, q, page, pageSize);
         var result = await repo.ListAsync(tenantCtx.GetTenantId(), filter, ct);
         return Results.Ok(result);
     }
@@ -130,5 +137,34 @@ public static class TicketsEndpoints
         }
 
         return Results.Ok(detail);
+    }
+
+    /// <summary>
+    /// Lab Avançado v0.4.0: POST /api/tickets/{id}/comments — comment user-driven.
+    /// Author resolvido server-side via JWT (IUserContext.GetAuthor).
+    /// 404 cross-tenant (não 403) — defesa OWASP A01:2021 (não vazar existência).
+    /// </summary>
+    private static async Task<IResult> AddCommentAsync(
+        int id,
+        CreateCommentRequest request,
+        ICommentsRepository commentsRepo,
+        ITenantContext tenantCtx,
+        IUserContext userCtx,
+        CancellationToken ct)
+    {
+        var content = RequestValidators.ValidateCommentContent(request);
+        var comment = await commentsRepo.AddUserCommentAsync(
+            id,
+            userCtx.GetAuthor(),
+            content,
+            tenantCtx.GetTenantId(),
+            ct);
+
+        if (comment is null)
+        {
+            throw new NotFoundException("Ticket", id.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        return Results.Created($"/api/tickets/{id}/comments/{comment.CommentId}", comment);
     }
 }

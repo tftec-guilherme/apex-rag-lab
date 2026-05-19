@@ -20,7 +20,7 @@ import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { useMsal } from "@azure/msal-react";
 import { Button, MessageBar, MessageBarBody, MessageBarTitle, Skeleton, SkeletonItem } from "@fluentui/react-components";
-import { ArrowClockwise24Regular } from "@fluentui/react-icons";
+import { ArrowClockwise24Regular, Add24Regular } from "@fluentui/react-icons";
 
 import styles from "./Tickets.module.css";
 import { listTicketsApi, type TicketsListResponse } from "../../api";
@@ -59,6 +59,10 @@ export function Component(): JSX.Element {
                     {
                         status: statusParam,
                         category: categoryParam,
+                        // Lab Avançado v0.4.0: priority + q agora server-side
+                        // (paginação consistente — antes filter client-side podia esvaziar páginas).
+                        priority: priorityParam,
+                        q: queryParam.trim() || undefined,
                         limit: PAGE_SIZE,
                         offset: (pageParam - 1) * PAGE_SIZE
                     },
@@ -75,25 +79,14 @@ export function Component(): JSX.Element {
         return () => {
             cancelled = true;
         };
-    }, [statusParam, categoryParam, pageParam, instance, reloadKey]);
+    }, [statusParam, categoryParam, priorityParam, queryParam, pageParam, instance, reloadKey]);
 
     /**
-     * Filtragem client-side adicional:
-     * - search textual (subject + ticket_id) — feedback imediato
-     * - priority — backend ainda não aceita filtro de priority (futuro), aplicamos local
+     * Lab Avançado v0.4.0: filter client-side removido — agora backend filtra por
+     * priority + q (busca em subject). `visibleItems` apenas reflete a resposta
+     * server-side, preservando a totalização da paginação.
      */
-    const visibleItems = useMemo(() => {
-        if (!data?.items) return [];
-        let items = data.items;
-        if (priorityParam) {
-            items = items.filter(ticket => ticket.priority === priorityParam);
-        }
-        if (queryParam.trim()) {
-            const needle = queryParam.trim().toLowerCase();
-            items = items.filter(ticket => ticket.subject.toLowerCase().includes(needle) || String(ticket.ticket_id).includes(needle));
-        }
-        return items;
-    }, [data, queryParam, priorityParam]);
+    const visibleItems = useMemo(() => data?.items ?? [], [data]);
 
     const total = data?.pagination?.total ?? 0;
     const totalPages = total === 0 ? 1 : Math.ceil(total / PAGE_SIZE);
@@ -140,8 +133,14 @@ export function Component(): JSX.Element {
                     <p className={styles.subtitle}>{ticketCountLabel}</p>
                 </div>
                 <div className={styles.actions}>
-                    <Button appearance="primary" disabled title="Em breve">
-                        Novo ticket
+                    {/* Lab Avançado v0.4.0: botão habilitado, rota /tickets/new com form completo. */}
+                    <Button
+                        as="a"
+                        href="#/tickets/new"
+                        appearance="primary"
+                        icon={<Add24Regular />}
+                    >
+                        {t("helpsphere.tickets.newTicket", { defaultValue: "Novo ticket" })}
                     </Button>
                 </div>
             </header>
