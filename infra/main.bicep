@@ -864,11 +864,15 @@ module acaBackend 'core/host/container-app-upsert.bicep' = if (deploymentTarget 
       // Story 06.26: CORS reflectente no backend (app.py @app.after_request) — devolve
       // o Origin do request. SEM whitelist no Bicep (que dava galho a cada FRONTEND_URI novo).
     })
-    secrets: useAuthentication ? {
+    // Story 06.29 (AC4): defensive Bicep — only emit secrets/envSecrets when
+    // BOTH client/server secrets are non-empty. Prevents `ContainerAppSecretInvalid`
+    // in retry scenarios where azd env has `AZURE_USE_AUTHENTICATION=true` but the
+    // bootstrap secrets remained unset (e.g., auth_init.py aborted mid-flight).
+    secrets: (useAuthentication && !empty(clientAppSecret) && !empty(serverAppSecret)) ? {
       azureclientappsecret: clientAppSecret
       azureserverappsecret: serverAppSecret
     } : {}
-    envSecrets: useAuthentication ? [
+    envSecrets: (useAuthentication && !empty(clientAppSecret) && !empty(serverAppSecret)) ? [
       {
         name: 'AZURE_CLIENT_APP_SECRET'
         secretRef: 'azureclientappsecret'
