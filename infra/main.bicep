@@ -621,11 +621,20 @@ module frontendAppService 'core/host/appservice.bicep' = {
     // — Azure platform considera instance ready assim que express responde 200 em /
     // (que e imediato, sem dependencias). Sem isso azd espera 30-60s generic.
     healthCheckPath: '/'
-    // Story 06.26 fix: scmDoBuildDuringDeployment=true para Oryx rodar `npm install`
-    // server-side. Sem isso o zip do azd nao inclui node_modules/ e o node server.js
-    // falha com ERR_MODULE_NOT_FOUND 'express'. Vite build ja foi feito no prebuild
-    // hook do azd (npm run build em app/frontend/), entao Oryx so precisa do install.
-    scmDoBuildDuringDeployment: true
+    // Story 06.30: server.js usa APENAS stdlib do Node (node:http, node:fs, node:path,
+    // node:url) — ZERO deps runtime. Oryx nao precisa rodar npm install (validado em
+    // app/frontend/server.js linhas 5-9). `prepackage` hook do azure.yaml ja faz
+    // `npm install + npm run build` LOCAL na maquina do aluno (gera dist/ pronto).
+    // Oryx skip elimina ~10min de build redundante (RCA-A 2026-05-20 timeline confirmou:
+    // npm install 2min13s + vite 4min48s + zip node_modules 1min15s = 609s). Deploy
+    // cai de 12min para ~1min.
+    //
+    // NOTA: A Story 06.26 v1 forcou `true` aqui temendo `ERR_MODULE_NOT_FOUND 'express'`,
+    // mas o server.js foi reescrito para stdlib pura (Story 06.26 v2) — express nao
+    // esta no caminho. A Story 06.26 v2 tentou desfazer via appSettings override mas
+    // o `union()` em appservice.bicep linha 100-103 sobrescreve silenciosamente
+    // (bug de Bicep). Story 06.30 corrige no param do modulo (forma certa).
+    scmDoBuildDuringDeployment: false
     managedIdentity: false
     // clientAppId='' suprime configAuth (Easy Auth) — frontend serve LoginGate
     // MSAL no client-side; auth real e cobrada pelo backend `acaBackend` via
@@ -640,11 +649,10 @@ module frontendAppService 'core/host/appservice.bicep' = {
     // Para appservice usa o nome default do backend (mesmo pattern do `name` no module backend).
     appSettings: {
       WEBSITE_NODE_DEFAULT_VERSION: '~22'
-      // Story 06.26 v2: SKIP Oryx build server-side. Vite build acontece LOCAL
-      // via azure.yaml prepackage hook (npm install + npm run build no PC do aluno).
-      // server.js usa http nativo do Node — ZERO deps runtime. Deploy 8min → ~60s.
-      SCM_DO_BUILD_DURING_DEPLOYMENT: 'false'
-      ENABLE_ORYX_BUILD: 'false'
+      // Story 06.30: SCM_DO_BUILD_DURING_DEPLOYMENT e ENABLE_ORYX_BUILD foram
+      // removidos daqui — eram silenciosamente sobrescritos pelo `union()` no
+      // modulo appservice.bicep linha 100-103. Agora controlados via param
+      // `scmDoBuildDuringDeployment: false` (linha 628 deste arquivo).
       VITE_BACKEND_URI: (deploymentTarget == 'containerapps')
         ? 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesContainerApps}backend-${resourceToken}'}.${containerApps!.outputs.defaultDomain}'
         : 'https://${!empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesAppService}backend-${resourceToken}'}.azurewebsites.net'
